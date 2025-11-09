@@ -158,4 +158,4 @@ Access it at:
 
 ---
 
-**Developed with ❤️ using Node.js, Express, MongoDB, and React.**
+**Developed by AgroChain team using Node.js, Express, MongoDB, and React.**
