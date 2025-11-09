@@ -1,47 +1,46 @@
-import { createContext, useState, useEffect } from "react";
+import React, { createContext, useState, useEffect } from 'react';
 
-// Create a global context
-export const AuthContext = createContext();
+// Create the context
+export const AuthContext = createContext(null);
 
-/**
- * AuthProvider component wraps the entire app
- * and exposes the `user`, `login`, and `logout` functions.
- */
+// Create the provider component
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true); // Prevents flicker on load
 
-  // Load user data from localStorage on app start
+  // Check localStorage for user on initial app load
   useEffect(() => {
-    const storedUser = localStorage.getItem("agroChainUser");
-    if (storedUser) {
-      try {
+    try {
+      const storedUser = localStorage.getItem("agroChainUser");
+      if (storedUser) {
         setUser(JSON.parse(storedUser));
-      } catch {
-        localStorage.removeItem("agroChainUser");
       }
+    } catch (error) {
+      console.error("Failed to parse user from localStorage", error);
+      localStorage.removeItem("agroChainUser");
     }
+    setLoading(false); // Done loading
   }, []);
 
-  /**
-   * Save user data and optionally JWT to localStorage
-   * @param {Object} userData - { name, role, email, token }
-   */
+  // Login function to update state and localStorage
   const login = (userData) => {
     localStorage.setItem("agroChainUser", JSON.stringify(userData));
     setUser(userData);
   };
 
-  /**
-   * Clear user data (used during logout)
-   */
+  // Logout function
   const logout = () => {
     localStorage.removeItem("agroChainUser");
     setUser(null);
   };
 
+  // Value to be passed to consuming components
+  const value = { user, login, logout, loading };
+
+  // Render children only when not loading
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
-      {children}
+    <AuthContext.Provider value={value}>
+      {!loading && children}
     </AuthContext.Provider>
   );
 };

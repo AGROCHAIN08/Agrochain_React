@@ -124,7 +124,7 @@ nodemon index.js
 cd Agrochain_React/frontend/agrochain-client
 
 # 2. Install all required dependencies
-npm install
+npm install react-scripts@latest
 ```
 
 #### 3. Create the Frontend Environment File

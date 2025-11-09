@@ -1,225 +1,190 @@
-import { useState, useEffect } from "react";
-import "../assets/css/login.css";
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth';
+import api from '../services/api';
+import { GoogleLogin } from '@react-oauth/google';
+import '../assets/css/login.css'; 
 
-// Define the role-based redirection mapping
-const redirectToRolePage = (role, email) => {
-  if (email === "agrochain08@gmail.com") {
-    window.location.href = "/admin";
-    return;
-  }
-  const rolePages = {
-    farmer: "/farmer",
-    dealer: "/dealer",
-    retailer: "/retailer",
-  };
-  const redirectUrl = rolePages[role];
-  if (redirectUrl) window.location.href = redirectUrl;
-  else alert("Unknown role. Please contact support.");
-};
+// Import the new central Navbar
+import Navbar from '../components/Navbar'; 
 
-export default function Login() {
-  const [email, setEmail] = useState("");
-  const [otp, setOtp] = useState("");
-  const [otpSent, setOtpSent] = useState(false);
-  const [statusMsg, setStatusMsg] = useState("");
-  const [otpTimer, setOtpTimer] = useState(0);
-  const [resendVisible, setResendVisible] = useState(false);
+// Login Page component
+const Login = () => {
+  // ... (all your existing login logic from the previous step) ...
+  const [email, setEmail] = useState('');
+  const [otp, setOtp] = useState('');
+  const [showOtp, setShowOtp] = useState(false);
+  const [status, setStatus] = useState('');
   const [loading, setLoading] = useState(false);
+  const [timer, setTimer] = useState(300);
+  
+  const navigate = useNavigate();
+  const { login } = useAuth();
 
-  // Timer countdown effect
+  // Timer logic from login.js
   useEffect(() => {
-    if (otpTimer <= 0) return;
-    const interval = setInterval(() => {
-      setOtpTimer((prev) => {
-        if (prev <= 1) {
-          clearInterval(interval);
-          setResendVisible(true);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
+    let interval;
+    if (showOtp && timer > 0) {
+      interval = setInterval(() => {
+        setTimer((prevTimer) => prevTimer - 1);
+      }, 1000);
+    } else if (timer === 0) {
+      clearInterval(interval);
+      setStatus('OTP expired. Please resend.');
+    }
     return () => clearInterval(interval);
-  }, [otpTimer]);
+  }, [showOtp, timer]);
 
-  // Format timer mm:ss
-  const formatTimer = (seconds) => {
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return `${m}:${s.toString().padStart(2, "0")}`;
+  const redirectToRolePage = (user) => {
+    if (user.email === "agrochain08@gmail.com") {
+      navigate("/admin");
+    } else if (user.role === 'farmer') {
+      navigate('/farmer');
+    } else if (user.role === 'dealer') {
+      navigate('/dealer');
+    } else if (user.role === 'retailer') {
+      navigate('/retailer');
+    }
   };
 
-  // Send OTP
-  const sendOtp = async () => {
-    if (!email) return alert("Enter your email");
+  const handleGoogleLogin = async (credentialResponse) => {
+    setLoading(true);
+    setStatus('Verifying Google Sign-In...');
     try {
-      setLoading(true);
-      setStatusMsg("");
-      const res = await fetch("http://localhost:3000/api/auth/send-login-otp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setOtpSent(true);
-        setOtpTimer(300); // 5 min
-        setResendVisible(false);
-        setStatusMsg(data.msg || "OTP sent successfully!");
-      } else {
-        setStatusMsg(data.msg || "Failed to send OTP");
-      }
-    } catch (err) {
-      console.error(err);
-      setStatusMsg("Error: Failed to send OTP");
-    } finally {
-      setLoading(false);
+      const res = await api.post('/auth/login-google', { token: credentialResponse.credential });
+      const { user } = res.data;
+      login(user); // Save to context
+      setStatus(`Welcome back, ${user.firstName}! Redirecting...`);
+      redirectToRolePage(user);
+    } catch (error) {
+      setStatus(error.response?.data?.msg || 'Google login failed');
     }
+    setLoading(false);
   };
 
-  // Verify OTP
-  const verifyOtp = async () => {
-    if (!otp || otp.length !== 6) return alert("Enter valid 6-digit OTP");
+  const handleSendOtp = async (isResend = false) => {
+    setLoading(true);
+    setStatus('Sending OTP...');
     try {
-      setLoading(true);
-      setStatusMsg("");
-      const res = await fetch("http://localhost:3000/api/auth/verify-login-otp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, otp }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setStatusMsg(`✅ Welcome back ${data.user.firstName}!`);
-        localStorage.setItem("agroChainUser", JSON.stringify(data.user));
-        setTimeout(() => redirectToRolePage(data.role, data.user.email), 1000);
-      } else {
-        setStatusMsg(data.msg || "Invalid OTP");
-      }
-    } catch (err) {
-      console.error(err);
-      setStatusMsg("OTP verification failed");
-    } finally {
-      setLoading(false);
+      const response = await api.post('/auth/send-login-otp', { email });
+      setStatus(response.data.msg);
+      setShowOtp(true);
+      setTimer(300); // Reset timer
+    } catch (error) {
+      setStatus(error.response?.data?.msg || 'Failed to send OTP');
     }
+    setLoading(false);
   };
 
-  // Google Sign-In handler (GSI)
-  useEffect(() => {
-    /* global google */
-    const handleGoogleLogin = async (response) => {
-      try {
-        const res = await fetch("http://localhost:3000/api/auth/login-google", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ token: response.credential }),
-        });
-        const data = await res.json();
-        if (res.ok) {
-          setStatusMsg(`✅ Welcome back ${data.user.firstName}!`);
-          localStorage.setItem("agroChainUser", JSON.stringify(data.user));
-          setTimeout(() => redirectToRolePage(data.role, data.user.email), 1000);
-        } else {
-          setStatusMsg(data.msg || "Google login failed");
-        }
-      } catch (err) {
-        console.error(err);
-        setStatusMsg("Google login failed");
-      }
-    };
-
-    // Initialize Google Sign-In button
-    if (window.google) {
-      google.accounts.id.initialize({
-        client_id:
-          "262898642473-niisbi298nfo33a175rju6acmpkatrs4.apps.googleusercontent.com",
-        callback: handleGoogleLogin,
-      });
-      google.accounts.id.renderButton(
-        document.getElementById("gSignInBtn"),
-        { theme: "outline", size: "large" }
-      );
+  const handleVerifyOtp = async () => {
+    setLoading(true);
+    setStatus('Verifying OTP...');
+    try {
+      const response = await api.post('/auth/verify-login-otp', { email, otp });
+      const { user } = response.data;
+      login(user);
+      setStatus(`Welcome back, ${user.firstName}! Redirecting...`);
+      redirectToRolePage(user);
+    } catch (error) {
+      setStatus(error.response?.data?.msg || 'Invalid OTP');
     }
-  }, []);
+    setLoading(false);
+  };
+
 
   return (
-    <div className="login-page">
-      <nav className="navbar">
-        <div className="nav-left">
-          <img
-            src="https://ik.imagekit.io/a2wpi1kd9/imgToUrl/image-to-url_ThyEiMVLh"
-            alt="AgroChain Logo"
-            className="logo"
-          />
-          <span className="brand-name">
-            Agro<span className="chain-text">Chain</span>
-          </span>
-        </div>
-      </nav>
-
+    <>
+      <Navbar /> {/* <-- Use the imported component */}
       <div className="signup-container">
-        <h2>Login to AgroChain</h2>
+        {/* ... (all your login HTML) ... */}
+         <h2>Login to AgroChain</h2>
+        
+        {status && 
+          <div id="loginStatus" style={{
+            display: 'block',
+            padding: '12px',
+            borderRadius: '4px',
+            margin: '15px 0',
+            color: status.includes('Failed') || status.includes('Error') || status.includes('expired') ? '#721c24' : '#155724',
+            backgroundColor: status.includes('Failed') || status.includes('Error') || status.includes('expired') ? '#f8d7da' : '#d4edda'
+          }}>
+            {status}
+          </div>
+        }
 
         <div className="google-signin-section">
           <h4>Option 1: Sign in with Google</h4>
-          <div id="gSignInBtn"></div>
+          <GoogleLogin
+            onSuccess={handleGoogleLogin}
+            onError={() => {
+              console.log('Login Failed');
+              setStatus('Google login failed. Please try again.');
+            }}
+            theme="outline"
+            size="large"
+            shape="rectangular"
+            text="signin_with"
+          />
         </div>
-
+        
         <div className="divider"><span>OR</span></div>
 
         <div className="email-otp-section">
           <h4>Option 2: Login with Email + OTP</h4>
-          <input
-            type="email"
-            placeholder="Enter your email"
+          <input 
+            type="email" 
+            id="loginEmail" 
+            placeholder="Enter your email" 
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            disabled={showOtp || loading}
           />
-          <button onClick={sendOtp} disabled={loading}>
-            {loading ? "Sending..." : "Send OTP"}
+          <button type="button" id="sendOtpBtn" onClick={() => handleSendOtp(false)} disabled={loading || showOtp}>
+            {loading ? 'Sending...' : 'Send OTP'}
           </button>
 
-          {otpSent && (
+          {showOtp && (
             <div id="otpSection">
               <label>Enter OTP</label>
-              <input
-                type="text"
+              <input 
+                type="text" 
+                id="otpInput" 
+                maxLength="6" 
                 placeholder="000000"
-                maxLength={6}
                 value={otp}
                 onChange={(e) => setOtp(e.target.value)}
+                disabled={loading}
               />
-              <button onClick={verifyOtp} disabled={loading}>
-                {loading ? "Verifying..." : "Verify & Login"}
+              <button type="button" id="verifyOtpBtn" onClick={handleVerifyOtp} disabled={loading || otp.length < 6}>
+                {loading ? 'Verifying...' : 'Verify & Login'}
               </button>
-              <p className="otp-timer">
-                {otpTimer > 0
-                  ? `Code expires in ${formatTimer(otpTimer)}`
-                  : "Code expired"}
+              
+              <p className="otp-timer" id="otpTimer">
+                {timer > 0 ? `Code expires in ${Math.floor(timer / 60)}:${(timer % 60).toString().padStart(2, '0')}` : 'Code expired'}
               </p>
-              {resendVisible && (
-                <button onClick={sendOtp}>Resend Code</button>
-              )}
-            </div>
-          )}
-
-          {statusMsg && (
-            <div
-              className="message-error"
-              style={{ color: statusMsg.includes("✅") ? "green" : "red" }}
-            >
-              {statusMsg}
+              
+              <button 
+                type="button" 
+                id="resendOtpBtn" 
+                style={{ display: timer === 0 ? 'block' : 'none' }}
+                onClick={() => handleSendOtp(true)}
+                disabled={loading}
+              >
+                Resend Code
+              </button>
             </div>
           )}
         </div>
-
+        
         <div className="new-user-card">
           <p>New to AgroChain?</p>
-          <a href="/signup" className="signup-btn">
+          <Link to="/signup" className="signup-btn">
             <i className="fa fa-user-plus"></i> Sign Up
-          </a>
+          </Link>
         </div>
       </div>
-    </div>
+    </>
   );
-}
+};
+
+export default Login;

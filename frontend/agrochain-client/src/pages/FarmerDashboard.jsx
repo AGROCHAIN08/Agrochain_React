@@ -1,19 +1,495 @@
-import "../assets/css/farmer.css";
+import React, { useState, useEffect, useCallback } from 'react';
+import { useAuth } from '../hooks/useAuth';
+import api from '../services/api';
+import '../assets/css/farmer.css'; 
+import { useNavigate } from 'react-router-dom';
 
-export default function FarmerDashboard() {
+// --- FarmerNavbar Component (from farmer.html) ---
+// THIS IS DEFINED *INSIDE* THE DASHBOARD FILE
+const FarmerNavbar = ({ user, notificationCount, onSignout, onNavigate, activeSection }) => {
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  // Close profile dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (!event.target.closest('.profile-dropdown')) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
+
   return (
-    <div className="farmer-dashboard">
-      <nav className="navbar">
-        <div className="nav-left">
-          <img src="https://ik.imagekit.io/a2wpi1kd9/imgToUrl/image-to-url_ThyEiMVLh" alt="AgroChain Logo" className="logo" />
-          <span className="brand-name">Agro<span className="chain-text">Chain</span></span>
-        </div>
-      </nav>
-
-      <main className="farmer-main">
-        <h2>🌾 Farmer Inventory Dashboard</h2>
-        <p>Manage crops, prices, and orders efficiently.</p>
-      </main>
-    </div>
+    <nav className="navbar">
+      <div className="nav-left">
+        <img src="https://ik.imagekit.io/a2wpi1kd9/imgToUrl/image-to-url_ThyEiMVLh" alt="AgroChain Logo" className="logo" />
+        <span className="brand-name">Agro<span className="chain-text">Chain</span></span>
+      </div>
+      
+      <button className="menu-toggle" id="menuToggleBtn" onClick={() => setMenuOpen(!menuOpen)}>
+        {menuOpen ? '✖' : '☰'}
+      </button>
+      
+      <div className={`nav-links-container ${menuOpen ? 'active' : ''}`} id="navLinksContainer">
+          <div className="nav-center">
+            <a href="#" className={activeSection === 'inventory' ? 'nav-link active' : 'nav-link'} onClick={() => onNavigate('inventory')}>
+              <span className="nav-icon">🌾</span> Inventory
+            </a>
+            <a href="#" className={activeSection === 'orders' ? 'nav-link active' : 'nav-link'} onClick={() => onNavigate('orders')}>
+              <span className="nav-icon">📦</span> Orders
+            </a>
+          </div>
+          
+          <div className="nav-right">
+            <a href="#" className={activeSection === 'notifications' ? 'nav-link active' : 'nav-link'} id="navNotificationBtn" onClick={() => onNavigate('notifications')}>
+              <span className="nav-icon">🔔</span>
+              {notificationCount > 0 &&
+                <span className="notification-badge" id="notificationBadge">{notificationCount}</span>
+              }
+            </a>
+            <div className="profile-dropdown">
+              <button className="profile-btn" id="profileDropdownBtn" onClick={(e) => { e.stopPropagation(); setDropdownOpen(!dropdownOpen); }}>
+                <span className="profile-icon">👤</span>
+                <span id="farmerNameDisplay">{user ? user.firstName : 'Farmer'}</span>
+                <span className="dropdown-arrow">▼</span>
+              </button>
+              <div className={`profile-dropdown-menu ${dropdownOpen ? 'show' : ''}`} id="profileDropdownMenu">
+                <a href="#" className="dropdown-item" id="viewProfileBtn" onClick={() => onNavigate('profile')}>
+                  <span className="dropdown-icon">👤</span> My Profile
+                </a>
+                <div className="dropdown-divider"></div>
+                <a href="#" className="dropdown-item logout-item" id="navSignoutBtn" onClick={onSignout}>
+                  <span className="dropdown-icon">🚪</span> Sign Out
+                </a>
+              </div>
+            </div>
+          </div>
+      </div>
+    </nav>
   );
-}
+};
+
+// --- FarmerDashboard Page Component ---
+const FarmerDashboard = () => {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  
+  const [activeSection, setActiveSection] = useState('inventory');
+  const [crops, setCrops] = useState([]);
+  const [orders, setOrders] = useState([]);
+  const [notifications, setNotifications] = useState([]);
+  const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  
+  const [showCropForm, setShowCropForm] = useState(false);
+  const [isEditing, setIsEditing] = useState(null);
+  const [formData, setFormData] = useState({
+    productType: '', varietySpecies: '', harvestQuantity: '',
+    unitOfSale: 'kg', targetPrice: '', image: null,
+  });
+  const [formMessage, setFormMessage] = useState({ type: '', text: '' });
+  const [editProfileData, setEditProfileData] = useState(null);
+
+  // --- Data Loading ---
+  const loadAllData = useCallback(async () => {
+    if (!user) return;
+    try {
+      setLoading(true);
+      const [cropsRes, ordersRes, notificationsRes, profileRes] = await Promise.all([
+        api.get(`/farmer/crops/${user.email}`),
+        api.get(`/farmer/orders/${user.email}`),
+        api.get(`/farmer/notifications/${user.email}`),
+        api.get(`/auth/profile/${user.email}`)
+      ]);
+      setCrops(cropsRes.data);
+      setOrders(ordersRes.data);
+      setNotifications(notificationsRes.data);
+      setProfile(profileRes.data);
+      setEditProfileData({
+        farmLocation: profileRes.data.farmLocation || '',
+        latitude: profileRes.data.latitude || '',
+        longitude: profileRes.data.longitude || '',
+        farmSize: profileRes.data.farmSize || ''
+      });
+    } catch (err) {
+      setError(err.message || 'Failed to load data');
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    loadAllData();
+  }, [user, loadAllData]);
+
+  const handleSignout = () => {
+    if (window.confirm("Are you sure you want to sign out?")) {
+      logout();
+      navigate('/login');
+    }
+  };
+
+  const handleNavigate = (section) => {
+    setActiveSection(section);
+  };
+
+  const handleFormChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleFileChange = (e) => {
+    setFormData(prev => ({ ...prev, image: e.target.files[0] }));
+  };
+  
+  const resetForm = () => {
+    setFormData({
+      productType: '', varietySpecies: '', harvestQuantity: '',
+      unitOfSale: 'kg', targetPrice: '', image: null,
+    });
+    setIsEditing(null);
+    setShowCropForm(false);
+  };
+
+  const handleCropSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setFormMessage({ type: '', text: '' });
+
+    const data = new FormData();
+    data.append("productType", formData.productType);
+    data.append("varietySpecies", formData.varietySpecies);
+    data.append("harvestQuantity", formData.harvestQuantity);
+    data.append("unitOfSale", formData.unitOfSale);
+    data.append("targetPrice", formData.targetPrice);
+    if (formData.image) {
+      data.append("image", formData.image);
+    }
+
+    try {
+      let res;
+      if (isEditing) {
+        res = await api.put(`/farmer/crops/${user.email}/${isEditing}`, data, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+      } else {
+        res = await api.post(`/farmer/crops/${user.email}`, data, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+      }
+      setFormMessage({ type: 'success', text: `Product ${isEditing ? 'updated' : 'added'}!` });
+      resetForm();
+      loadAllData(); 
+    } catch (err) {
+      setFormMessage({ type: 'error', text: err.response?.data?.msg || 'Operation failed' });
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  const handleEditClick = (crop) => {
+    setIsEditing(crop._id);
+    setFormData({
+      productType: crop.productType,
+      varietySpecies: crop.varietySpecies,
+      harvestQuantity: crop.harvestQuantity,
+      unitOfSale: crop.unitOfSale,
+      targetPrice: crop.targetPrice,
+      image: null,
+    });
+    setShowCropForm(true);
+    window.scrollTo(0, 0);
+  };
+  
+  const handleDeleteCrop = async (cropId) => {
+    if (!window.confirm("Are you sure you want to delete this product?")) return;
+    try {
+      await api.delete(`/farmer/crops/${user.email}/${cropId}`);
+      setFormMessage({ type: 'success', text: 'Product deleted!' });
+      loadAllData();
+    } catch (err) {
+      setFormMessage({ type: 'error', text: err.response?.data?.msg || 'Failed to delete' });
+    }
+  };
+
+  const handleAcceptBid = async (orderId) => {
+    if (!window.confirm('Are you sure you want to accept this bid?')) return;
+    try {
+      await api.post(`/farmer/accept-bid/${user.email}`, { orderId });
+      alert('Bid accepted successfully!');
+      loadAllData(); 
+    } catch (err) {
+      alert(err.response?.data?.msg || 'Error accepting bid');
+    }
+  };
+
+  const handleRejectBid = async (orderId) => {
+    if (!window.confirm('Are you sure you want to reject this bid?')) return;
+    try {
+      await api.post(`/farmer/reject-bid/${user.email}`, { orderId });
+      alert('Bid rejected.');
+      loadAllData();
+    } catch (err) {
+      alert(err.response?.data?.msg || 'Error rejecting bid');
+    }
+  };
+  
+  const handleProfileEditChange = (e) => {
+    const { name, value } = e.target;
+    setEditProfileData(prev => ({...prev, [name]: value}));
+  };
+
+  const handleProfileUpdate = async (e) => {
+    e.preventDefault();
+    try {
+      await api.put(`/auth/farmer/update/${user.email}`, editProfileData);
+      alert("Profile updated!");
+      loadAllData();
+      setEditProfileData(null); // Close edit form
+    } catch (err) {
+       alert(err.response?.data?.msg || 'Error updating profile');
+    }
+  };
+
+  const handleGetGeo = () => {
+     if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setEditProfileData(prev => ({
+            ...prev,
+            latitude: position.coords.latitude.toFixed(6),
+            longitude: position.coords.longitude.toFixed(6)
+          }));
+          alert("📍 Location updated!");
+        },
+        () => alert("Unable to fetch location. Please allow access.")
+      );
+    }
+  };
+  
+  const unreadCount = notifications.filter(n => !n.read).length;
+
+  return (
+    <>
+      <FarmerNavbar 
+        user={user} 
+        notificationCount={unreadCount}
+        onSignout={handleSignout} 
+        onNavigate={handleNavigate} 
+        activeSection={activeSection}
+      />
+      
+      <div className="content">
+        {error && <div className="error-message">{error}</div>}
+        {formMessage.text && <div className={formMessage.type === 'success' ? 'message' : 'error-message'}>{formMessage.text}</div>}
+        
+        {activeSection === 'inventory' && (
+          <section id="inventorySection">
+            <div className="section-header">
+              <h2>🌾 My Inventory</h2>
+              <button className="add-btn" onClick={() => setShowCropForm(!showCropForm)}>
+                {showCropForm ? '✖ Cancel' : '+ Add New Product'}
+              </button>
+            </div>
+            {showCropForm && (
+              <form id="cropForm" onSubmit={handleCropSubmit}>
+                <div className="form-row">
+                  <label>Product Type:
+                    <select name="productType" value={formData.productType} onChange={handleFormChange} required>
+                      <option value="">Select Product Type</option>
+                      <option value="Fruit">Fruit</option>
+                      <option value="Vegetable">Vegetable</option>
+                      <option value="Cereal">Cereal</option>
+                      <option value="Spices">Spices</option>
+                      <option value="Pulses">Pulses</option>
+                      <option value="Oil Seeds">Oil Seeds</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </label>
+                </div>
+                <div className="form-row">
+                  <label>Variety/Species:
+                    <input type="text" name="varietySpecies" value={formData.varietySpecies} onChange={handleFormChange} placeholder="e.g., Alphonso Mango" required />
+                  </label>
+                </div>
+                <div className="form-row">
+                  <label>Harvest Quantity:
+                    <input type="number" name="harvestQuantity" value={formData.harvestQuantity} onChange={handleFormChange} placeholder="e.g., 500" required min="1" />
+                  </label>
+                  <label>Unit of Sale:
+                    <select name="unitOfSale" value={formData.unitOfSale} onChange={handleFormChange} required>
+                      <option value="kg">Kilograms (kg)</option>
+                      <option value="quintal">Quintals (100 kg)</option>
+                      <option value="ton">Tons (1000 kg)</option>
+                      <option value="box">Box</option>
+                      <option value="dozen">Dozen</option>
+                    </select>
+                  </label>
+                </div>
+                <div className="form-row">
+                  <label>Target Price (₹):
+                    <input type="number" name="targetPrice" value={formData.targetPrice} onChange={handleFormChange} placeholder="e.g., 50" required min="0" />
+                  </label>
+                </div>
+                <div className="form-row">
+                  <label>Product Image: {isEditing && "(Optional)"}
+                    <input type="file" name="image" onChange={handleFileChange} accept="image/*" required={!isEditing} />
+                  </label>
+                </div>
+                <button type="submit" className="submit-btn" disabled={loading}>
+                  {loading ? 'Submitting...' : (isEditing ? '💾 Update Product' : '✨ List Product')}
+                </button>
+              </form>
+            )}
+            <div className="products-grid" id="productsGrid">
+              {loading ? <p>Loading products...</p> : null}
+              {!loading && crops.length === 0 && (
+                <div className="empty-state">
+                  <div className="empty-state-icon">🌱</div>
+                  <h3>No Products Added Yet</h3>
+                </div>
+              )}
+              {crops.map(crop => (
+                <div key={crop._id} className="product-card">
+                  <img src={crop.imageUrl} alt={crop.varietySpecies} className="product-card-image" />
+                  <div className="product-card-content">
+                    <h3>{crop.varietySpecies}</h3>
+                    <span className="product-type">{crop.productType}</span>
+                    <div className="product-details">
+                      <div className="product-detail-item">
+                        <div className="product-detail-label">Quantity</div>
+                        <div className="product-detail-value">{crop.harvestQuantity} {crop.unitOfSale}</div>
+                      </div>
+                      <div className="product-detail-item price-highlight">
+                        <div className="product-detail-label">Price</div>
+                        <div className="product-detail-value">₹{crop.targetPrice} per {crop.unitOfSale}</div>
+                      </div>
+                    </div>
+                    {/* ... Reviews ... */}
+                    <div className="product-actions">
+                      <button className="action-btn edit-btn" onClick={() => handleEditClick(crop)}>📝 Edit</button>
+                      <button className="action-btn delete-btn" onClick={() => handleDeleteCrop(crop._id)}>🗑️ Delete</button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+        
+        {activeSection === 'orders' && (
+          <section id="ordersSection">
+            <div className="section-header"><h2>📦 My Orders</h2></div>
+            <div className="orders-grid" id="farmerOrdersGrid">
+              {loading ? <p>Loading orders...</p> : null}
+              {!loading && orders.length === 0 && (
+                <div className="empty-state">
+                  <div className="empty-state-icon">📦</div>
+                  <h3>No Orders Yet</h3>
+                </div>
+              )}
+              {orders.map(order => (
+                <div key={order._id} className={`farmer-order-card status-${order.status.toLowerCase().replace(/\s+/g, '-')}`}>
+                  <span className={`order-status-badge status-${order.status.toLowerCase().replace(/\s+/g, '-')}`}>{order.status}</span>
+                  <div className="order-product-info">
+                    <div className="order-product-name">{order.productDetails.varietySpecies}</div>
+                  </div>
+                  <div className="order-details-grid">
+                    <div className="order-detail-item"><div className="order-detail-label">Quantity</div><div className="order-detail-value">{order.quantity} {order.productDetails.unitOfSale}</div></div>
+                    <div className="order-detail-item"><div className="order-detail-label">Vehicle</div><div className="order-detail-value">{order.vehicleDetails.vehicleId}</div></div>
+                    <div className="order-detail-item"><div className="order-detail-label">Total Amount</div><div className="order-detail-value">₹{order.totalAmount.toFixed(2)}</div></div>
+                  </div>
+                  <div className="dealer-info-panel">
+                    <div className="dealer-info-title">🏢 Dealer Information</div>
+                    <div className="dealer-contact-info">
+                      <span><strong>Name:</strong> {order.dealerDetails.businessName || `${order.dealerDetails.firstName}`}</span>
+                      <span><strong>Mobile:</strong> {order.dealerDetails.mobile}</span>
+                    </div>
+                  </div>
+                  {order.status === 'Bid Placed' && order.bidStatus === 'Pending' && (
+                    <div style={{ background: '#fef3c7', border: '2px solid #f59e0b', padding: '15px', marginTop: '15px' }}>
+                      <h4 style={{ marginTop: 0, color: '#d97706' }}>💰 New Bid Received</h4>
+                      <p><strong>Bid Price:</strong> ₹{order.bidPrice} per {order.productDetails.unitOfSale}</p>
+                      <p><strong>Total Amount:</strong> ₹{order.totalAmount.toFixed(2)}</p>
+                      <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                        <button onClick={() => handleAcceptBid(order._id)} disabled={loading} style={{ flex: 1, background: '#10b981', color: 'white', padding: '10px', border: 'none', borderRadius: '6px' }}>✓ Accept Bid</button>
+                        <button onClick={() => handleRejectBid(order._id)} disabled={loading} style={{ flex: 1, background: '#ef4444', color: 'white', padding: '10px', border: 'none', borderRadius: '6px' }}>✗ Reject Bid</button>
+                      </div>
+                    </div>
+                  )}
+                  {order.status === 'Bid Accepted' && (
+                    <div style={{ background: '#d1fae5', padding: '15px', marginTop: '15px' }}>
+                       <h4 style={{ color: '#059669' }}>✓ Bid Accepted</h4>
+                       <p><strong>Receipt:</strong> {order.receiptNumber}</p>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+        
+        {activeSection === 'notifications' && (
+          <section id="notificationsSection">
+            <div className="section-header"><h2>🔔 Notifications</h2></div>
+            <div className="notifications-panel" id="notificationsList">
+              {loading ? <p>Loading notifications...</p> : null}
+              {!loading && notifications.length === 0 && (
+                <div className="empty-state"><div className="empty-state-icon">🔔</div><h3>No New Notifications</h3></div>
+              )}
+              {notifications.map(n => (
+                <div key={n.id || n._id} className={`notification-item ${n.read ? 'read' : 'unread'}`}>
+                  {/* ... notif card ... */}
+                  <p className="notification-message">{n.message}</p>
+                  <small className="notification-time">{new Date(n.timestamp).toLocaleString()}</small>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+        
+        {activeSection === 'profile' && (
+          <section id="profileSection">
+            <div className="section-header"><h2>👤 My Profile</h2></div>
+            <div className="profile-container">
+              {loading ? <p>Loading profile...</p> : profile && (
+                <div className="profile-card" id="profileInfo">
+                  <p><b>Name:</b> {profile.firstName} {profile.lastName || ''}</p>
+                  <p><b>Email:</b> {profile.email}</p>
+                  <p><b>Mobile:</b> {profile.mobile}</p>
+                  <p><b>Aadhaar:</b> {profile.aadhaar || 'N/A'}</p>
+                  <p><b>Farm Location:</b> {profile.farmLocation || "N/A"}</p>
+                  <p><b>Farm Size:</b> {profile.farmSize || "N/A"}</p>
+                  <button id="editProfileBtnInCard" className="add-btn" style={{marginTop: '20px'}} onClick={() => setEditProfileData(profile)}>✏️ Edit Additional Details</button>
+                </div>
+              )}
+              {editProfileData && (
+                <form id="editProfileForm" className="profile-card edit-profile-form" onSubmit={handleProfileUpdate}>
+                  <h3>Edit Additional Details</h3>
+                  <label>Farm Location</label>
+                  <input type="text" name="farmLocation" value={editProfileData.farmLocation} onChange={handleProfileEditChange} />
+                  <label>Latitude</label>
+                  <input type="text" name="latitude" value={editProfileData.latitude} readOnly />
+                  <label>Longitude</label>
+                  <input type="text" name="longitude" value={editProfileData.longitude} readOnly />
+                  <button type="button" id="getGeoBtn" className="geo-btn" onClick={handleGetGeo}>📍 Get Current Location</button>
+                  <label>Farm Size</label>
+                  <input type="text" name="farmSize" value={editProfileData.farmSize} onChange={handleProfileEditChange} />
+                  <div className="form-actions">
+                    <button type="submit" id="saveProfileBtn" className="save-btn" disabled={loading}>💾 Save Changes</button>
+                    <button type="button" id="cancelEditBtn" className="cancel-btn" onClick={() => setEditProfileData(null)}>✖ Cancel</button>
+                  </div>
+                </form>
+              )}
+            </div>
+          </section>
+        )}
+      </div>
+    </>
+  );
+};
+
+export default FarmerDashboard;

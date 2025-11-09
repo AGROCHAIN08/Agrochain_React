@@ -226,8 +226,8 @@ body {
    MAIN CONTENT
    =========================== */
 .content {
-  max-width: 1400px;
-  margin: 0 auto;
+  max-width: none;
+  margin: 0 ;
   padding: 30px 40px;
   width: 100%;
 }

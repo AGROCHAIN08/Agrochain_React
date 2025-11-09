@@ -5,7 +5,7 @@
     box-sizing: border-box;
 }
 
-body {
+/* body {
     font-family: "Poppins", Arial, sans-serif;
     background-color: #f9f9f9;
     color: #333;
@@ -13,17 +13,20 @@ body {
     flex-direction: column;
     min-height: 100vh;
     overflow-x: hidden;
-}
+} */
 
 html {
     scroll-behavior: smooth;
 }
 
+/* === THIS IS THE FIX === */
 .container {
-    max-width: 1400px;
-    margin: 0 auto;
+    max-width: none;  /* <-- FIX */
+    margin: 0;        /* <-- FIX */
     padding: 0 20px;
 }
+/* === END FIX === */
+
 
 /* Navbar Styling - Enhanced for Mobile */
 .navbar {
@@ -819,9 +822,9 @@ html {
 
 /* Mobile View - 768px and below */
 @media (max-width: 768px) {
-    .container {
-        padding: 0 15px;
-    }
+    /* .container {  <-- We keep this commented out to allow full-width */
+    /* padding: 0 15px; */
+    /* } */
     
     .brand-name {
         font-size: 1.4em;

@@ -1,13 +1,19 @@
-import "../assets/css/home.css";
+import React from 'react';
+import { Link } from 'react-router-dom';
 
-export default function Footer() {
+// Import the CSS that styles the footer
+// We use home.css since it's the primary stylesheet for public pages
+import '../assets/css/home.css'; 
+
+const Footer = () => {
   return (
     <footer className="footer">
       <div className="footer-container">
+        
         <div className="footer-column">
           <h3>About Us</h3>
           <p>
-            We empower farmers and consumers by building a transparent agricultural ecosystem.
+            We empower farmers and consumers by building a transparent agricultural ecosystem. 
             Discover, connect, and trade sustainably with AgroChain.
           </p>
         </div>
@@ -15,8 +21,11 @@ export default function Footer() {
         <div className="footer-column">
           <h3>Quick Links</h3>
           <ul>
-            <li><a href="/">Home</a></li>
-            <li><a href="/about">About</a></li>
+            {/* Use <Link> for internal React routing */}
+            <li><Link to="/">Home</Link></li>
+            <li><Link to="/about">About</Link></li>
+            
+            {/* Use <a> for links to page sections (anchor links) */}
             <li><a href="#features">Features</a></li>
             <li><a href="#">Privacy Policy</a></li>
           </ul>
@@ -32,10 +41,11 @@ export default function Footer() {
         <div className="footer-column">
           <h3>Follow Us</h3>
           <div className="social-icons">
-            <a href="#"><i className="fab fa-facebook-f"></i></a>
-            <a href="#"><i className="fab fa-twitter"></i></a>
-            <a href="#"><i className="fab fa-instagram"></i></a>
-            <a href="#"><i className="fab fa-linkedin-in"></i></a>
+            {/* These are external links, so <a> is correct */}
+            <a href="#" aria-label="Facebook"><i className="fab fa-facebook-f"></i></a>
+            <a href="#" aria-label="Twitter"><i className="fab fa-twitter"></i></a>
+            <a href="#" aria-label="Instagram"><i className="fab fa-instagram"></i></a>
+            <a href="#" aria-label="LinkedIn"><i className="fab fa-linkedin-in"></i></a>
           </div>
         </div>
       </div>
@@ -45,4 +55,6 @@ export default function Footer() {
       </div>
     </footer>
   );
-}
+};
+
+export default Footer;

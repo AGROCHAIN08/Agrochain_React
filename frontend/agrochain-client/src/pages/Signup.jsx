@@ -1,458 +1,307 @@
-import { useState, useEffect } from "react";
-import "../assets/css/signup.css";
+import React, { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import api from '../services/api';
+import { GoogleLogin } from '@react-oauth/google';
+import '../assets/css/signup.css'; 
 
-// Utility: redirect by role
-const redirectToRolePage = (role) => {
-  const roleMap = { farmer: "/farmer", dealer: "/dealer", retailer: "/retailer" };
-  window.location.href = roleMap[role] || "/login";
-};
+// Import the new central Navbar
+import Navbar from '../components/Navbar'; 
 
-export default function Signup() {
+// Signup Page component
+const Signup = () => {
+  // ... (all your existing signup logic from the previous step) ...
   const [step, setStep] = useState(1);
+  const [formData, setFormData] = useState({
+    firstName: '', lastName: '', mobile: '', email: '', role: '',
+    aadhaar: '', farmLocation: '', latitude: '', longitude: '', farmSize: '',
+    businessName: '', gstin: '', warehouseAddress: '',
+    shopName: '', shopAddress: '', shopType: '',
+  });
+  const [otp, setOtp] = useState('');
+  const [verificationMethod, setVerificationMethod] = useState(null);
+  const [googleCredential, setGoogleCredential] = useState(null);
+  const [showOtpSection, setShowOtpSection] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState('');
+  const navigate = useNavigate();
 
-  // Step 1 data
-  const [basic, setBasic] = useState({
-    firstName: "",
-    lastName: "",
-    mobile: "",
-    email: "",
-  });
-
-  // Step 2 verification
-  const [otp, setOtp] = useState("");
-  const [otpSent, setOtpSent] = useState(false);
-  const [otpTimer, setOtpTimer] = useState(0);
-  const [emailVerified, setEmailVerified] = useState(false);
-  const [googleVerified, setGoogleVerified] = useState(false);
-  const [googleToken, setGoogleToken] = useState("");
-  const [statusMsg, setStatusMsg] = useState("");
-
-  // Step 3 role selection
-  const [role, setRole] = useState("");
-
-  // Step 4 details
-  const [extra, setExtra] = useState({
-    aadhaar: "",
-    farmLocation: "",
-    latitude: "",
-    longitude: "",
-    farmSize: "",
-    businessName: "",
-    gstin: "",
-    warehouseAddress: "",
-    preferredCommodities: "",
-    shopName: "",
-    shopAddress: "",
-    shopType: "",
-    monthlyPurchaseVolume: "",
-  });
-
-  // Timer countdown
-  useEffect(() => {
-    if (otpTimer <= 0) return;
-    const interval = setInterval(() => {
-      setOtpTimer((prev) => {
-        if (prev <= 1) {
-          clearInterval(interval);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [otpTimer]);
-
-  // Format timer mm:ss
-  const formatTimer = (t) => `${Math.floor(t / 60)}:${(t % 60).toString().padStart(2, "0")}`;
-
-  // Step navigation
-  const next = () => setStep((s) => s + 1);
-  const back = () => setStep((s) => s - 1);
-
-  // Google Sign-In setup
-  useEffect(() => {
-    /* global google */
-    const handleGoogleSignIn = async (response) => {
-      try {
-        const res = await fetch("http://localhost:3000/api/auth/verify-google", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ token: response.credential }),
-        });
-        const data = await res.json();
-        if (res.ok) {
-          setGoogleVerified(true);
-          setGoogleToken(response.credential);
-          setBasic({
-            firstName: data.firstName || "",
-            lastName: data.lastName || "",
-            email: data.email || "",
-            mobile: basic.mobile,
-          });
-          setEmailVerified(true);
-          setStatusMsg(`✅ Google verification successful for ${data.email}`);
-        } else {
-          setStatusMsg(data.msg || "Google verification failed");
-        }
-      } catch {
-        setStatusMsg("Google sign-in failed");
-      }
-    };
-
-    if (window.google) {
-      google.accounts.id.initialize({
-        client_id:
-          "262898642473-niisbi298nfo33a175rju6acmpkatrs4.apps.googleusercontent.com",
-        callback: handleGoogleSignIn,
-      });
-      google.accounts.id.renderButton(document.getElementById("googleSignupBtn"), {
-        theme: "outline",
-        size: "large",
-      });
-    }
-  }, [basic.mobile]);
-
-  // Send OTP
-  const sendOtp = async () => {
-    if (!basic.email) return alert("Enter a valid email");
-    try {
-      setLoading(true);
-      const res = await fetch("http://localhost:3000/api/auth/send-otp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: basic.email }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setOtpSent(true);
-        setOtpTimer(300);
-        setStatusMsg(data.msg || "Verification code sent");
-      } else {
-        setStatusMsg(data.msg || "Failed to send OTP");
-      }
-    } catch {
-      setStatusMsg("Error sending OTP");
-    } finally {
-      setLoading(false);
-    }
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  // Verify OTP
-  const verifyOtp = async () => {
-    if (!otp || otp.length !== 6) return alert("Enter valid 6-digit OTP");
-    try {
-      setLoading(true);
-      const res = await fetch("http://localhost:3000/api/auth/verify-otp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: basic.email, otp }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setEmailVerified(true);
-        setStatusMsg(`✅ ${data.msg}`);
-      } else {
-        setStatusMsg(data.msg || "Invalid code");
-      }
-    } catch {
-      setStatusMsg("Error verifying code");
-    } finally {
-      setLoading(false);
-    }
+  const handleRoleSelection = (role) => {
+    setFormData(prev => ({ ...prev, role: role }));
   };
 
-  // Get Geolocation
-  const fetchLocation = () => {
+  const validateStep1 = () => {
+    const { firstName, lastName, mobile, email } = formData;
+    const namePattern = /^[A-Za-z]+$/;
+    if (!firstName || !mobile || !email) { setMessage("Please fill all required fields."); return false; }
+    if (!namePattern.test(firstName)) { setMessage("First name must contain only alphabets."); return false; }
+    if (lastName && !namePattern.test(lastName)) { setMessage("Last name must contain only alphabets."); return false; }
+    if (!/^\d{10}$/.test(mobile)) { setMessage("Mobile number must be exactly 10 digits."); return false; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setMessage("Please enter a valid email address."); return false; }
+    setMessage('');
+    setStep(2);
+  };
+
+  const handleGoogleSuccess = async (credentialResponse) => {
+    setLoading(true);
+    setMessage('Verifying Google account...');
+    try {
+      const res = await api.post('/auth/verify-google', { token: credentialResponse.credential });
+      const { email, firstName, lastName } = res.data;
+      setFormData(prev => ({ ...prev, email, firstName, lastName }));
+      setVerificationMethod('google');
+      setGoogleCredential(credentialResponse.credential);
+      setMessage('✅ Google verification successful!');
+    } catch (err) {
+      setMessage(err.response?.data?.msg || 'Google verification failed');
+    }
+    setLoading(false);
+  };
+  
+  const handleSendOtp = async () => {
+    setLoading(true);
+    setMessage('Sending OTP...');
+    try {
+      await api.post('/auth/send-otp', { email: formData.email });
+      setMessage('OTP Sent to your email!');
+      setShowOtpSection(true);
+    } catch (err) {
+      setMessage(err.response?.data?.msg || 'Failed to send OTP');
+    }
+    setLoading(false);
+  };
+  
+  const handleVerifyOtp = async () => {
+    setLoading(true);
+    setMessage('Verifying OTP...');
+     try {
+      await api.post('/auth/verify-otp', { email: formData.email, otp: otp });
+      setMessage('✅ Email Verified!');
+      setVerificationMethod('email');
+    } catch (err) {
+      setMessage(err.response?.data?.msg || 'Invalid OTP');
+    }
+    setLoading(false);
+  };
+  
+  const handleGetLocation = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          const lat = pos.coords.latitude.toFixed(6);
-          const lon = pos.coords.longitude.toFixed(6);
-          setExtra({ ...extra, latitude: lat, longitude: lon });
-          alert(`Location fetched: ${lat}, ${lon}`);
+        (position) => {
+          const lat = position.coords.latitude.toFixed(6);
+          const lon = position.coords.longitude.toFixed(6);
+          setFormData(prev => ({ ...prev, latitude: lat, longitude: lon }));
+          alert(`Location fetched successfully!`);
         },
-        () => alert("Allow location permission to fetch coordinates")
+        () => alert("Unable to fetch location. Please allow location access.")
       );
-    } else alert("Geolocation not supported by browser");
-  };
-
-  // Submit final form
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!emailVerified && !googleVerified) return alert("Verify your email first");
-    setLoading(true);
-
-    const payload = {
-      ...basic,
-      role,
-      ...extra,
-      emailVerified,
-      googleToken: googleVerified ? googleToken : null,
-    };
-
-    try {
-      const endpoint = googleVerified
-        ? "http://localhost:3000/api/auth/signup-google"
-        : "http://localhost:3000/api/auth/signup";
-
-      const res = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setStatusMsg(`✅ ${data.msg}`);
-        setTimeout(() => (window.location.href = "/login"), 1500);
-      } else {
-        setStatusMsg(data.msg || "Signup failed");
-      }
-    } catch {
-      setStatusMsg("Error submitting form");
-    } finally {
-      setLoading(false);
+    } else {
+      alert("Geolocation is not supported by your browser.");
     }
   };
 
-  // Validation for Step 1
-  const validateStep1 = () => {
-    const namePattern = /^[A-Za-z]+$/;
-    if (!basic.firstName || !basic.mobile || !basic.email)
-      return alert("Please fill all required fields");
-    if (!namePattern.test(basic.firstName))
-      return alert("First name must contain only alphabets");
-    if (basic.lastName && !namePattern.test(basic.lastName))
-      return alert("Last name must contain only alphabets");
-    if (!/^[0-9]{10}$/.test(basic.mobile))
-      return alert("Mobile number must be exactly 10 digits");
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(basic.email))
-      return alert("Invalid email address");
-    next();
+  const handleFormSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setMessage('Creating account...');
+    
+    let finalData = { ...formData };
+    let endpoint = '';
+    
+    if (verificationMethod === 'google') {
+      finalData.googleToken = googleCredential;
+      endpoint = '/auth/signup-google';
+    } else {
+      finalData.emailVerified = true;
+      endpoint = '/auth/signup';
+    }
+
+     try {
+      await api.post(endpoint, finalData);
+      setMessage('Signup successful! Redirecting to login...');
+      setTimeout(() => {
+        navigate('/login');
+      }, 2000);
+    } catch (err) {
+      setMessage(err.response?.data?.msg || 'Signup failed. Please check all fields.');
+    }
+    setLoading(false);
   };
+  
 
   return (
-    <div className="signup-container">
-      <h2 className="form-title">Sign up to AgroChain</h2>
-      <ul className="stepper">
-        <li className={step >= 1 ? "active" : ""}>1. Basic Info</li>
-        <li className={step >= 2 ? "active" : ""}>2. Email Verification</li>
-        <li className={step >= 3 ? "active" : ""}>3. Select Role</li>
-        <li className={step >= 4 ? "active" : ""}>4. Additional Details</li>
-      </ul>
+    <>
+      <Navbar /> {/* <-- Use the imported component */}
+      <div className="signup-container">
+        {/* ... (all your signup HTML and step logic) ... */}
+         <h2 className="form-title">Sign up to AgroChain</h2>
+        <ul className="stepper">
+          <li className={step >= 1 ? 'active' : ''}>1. Basic Info</li>
+          <li className={step >= 2 ? 'active' : ''}>2. Email Verification</li>
+          <li className={step >= 3 ? 'active' : ''}>3. Select Role</li>
+          <li className={step >= 4 ? 'active' : ''}>4. Additional Details</li>
+        </ul>
+        
+        {message && 
+          <div id="message" style={{
+            padding: '12px', borderRadius: '4px', margin: '15px 0',
+            color: message.includes('Failed') || message.includes('Error') || message.includes('must') ? '#721c24' : '#155724',
+            backgroundColor: message.includes('Failed') || message.includes('Error') || message.includes('must') ? '#f8d7da' : '#d4edda'
+          }}>
+            {message}
+          </div>
+        }
 
-      <form onSubmit={handleSubmit}>
-        {/* Step 1: Basic Info */}
-        {step === 1 && (
-          <div className="form-step">
-            <label>First Name *</label>
-            <input
-              value={basic.firstName}
-              onChange={(e) => setBasic({ ...basic, firstName: e.target.value })}
-            />
+        <form id="signupForm" onSubmit={handleFormSubmit}>
+          {/* Step 1: Basic Info */}
+          <div className="form-step" style={{ display: step === 1 ? 'block' : 'none' }}>
+            <label>First Name <span className="required">*</span></label>
+            <input type="text" id="firstName" name="firstName" value={formData.firstName} onChange={handleInputChange} required />
+            
             <label>Last Name</label>
-            <input
-              value={basic.lastName}
-              onChange={(e) => setBasic({ ...basic, lastName: e.target.value })}
-            />
-            <label>Mobile *</label>
-            <input
-              value={basic.mobile}
-              onChange={(e) => setBasic({ ...basic, mobile: e.target.value })}
-            />
-            <label>Email *</label>
-            <input
-              type="email"
-              value={basic.email}
-              onChange={(e) => setBasic({ ...basic, email: e.target.value })}
-            />
+            <input type="text" id="lastName" name="lastName" value={formData.lastName} onChange={handleInputChange} />
+            
+            <label>Mobile <span className="required">*</span></label>
+            <input type="text" id="mobile" name="mobile" value={formData.mobile} onChange={handleInputChange} required />
+            
+            <label>Email <span className="required">*</span></label>
+            <input type="email" id="email" name="email" value={formData.email} onChange={handleInputChange} required />
+            
             <div className="buttons">
-              <button type="button" onClick={validateStep1}>
-                Continue
-              </button>
+              <span></span>
+              <button type="button" id="next1" onClick={validateStep1}>Continue</button>
             </div>
           </div>
-        )}
-
-        {/* Step 2: Verification */}
-        {step === 2 && (
-          <div className="form-step">
+          
+          {/* Step 2: Email Verification */}
+          <div className="form-step" style={{ display: step === 2 ? 'block' : 'none' }}>
             <div className="verification-container">
               <h3>Verify Your Email</h3>
               <p>Choose your verification method:</p>
+              
+              <div className="google-signin-section" style={{ opacity: verificationMethod === 'email' ? 0.5 : 1 }}>
+                <h4>Option 1: Sign in with Google</h4>
+                <GoogleLogin
+                  onSuccess={handleGoogleSuccess}
+                  onError={() => setMessage('Google verification failed')}
+                  disabled={verificationMethod === 'email'}
+                  theme="outline"
+                  size="large"
+                  shape="rectangular"
+                  text="signup_with"
+                />
+              </div>
 
-              {!emailVerified && (
-                <>
-                  <div id="googleSignupBtn"></div>
-                  <div className="divider"><span>OR</span></div>
-                  <div className="email-otp-section">
-                    <button type="button" onClick={sendOtp}>
-                      {loading ? "Sending..." : otpSent ? "Resend Code" : "Send Verification Code"}
+              <div className="divider"><span>OR</span></div>
+
+              <div className="email-otp-section" style={{ opacity: verificationMethod === 'google' ? 0.5 : 1 }}>
+                <h4>Option 2: Email Verification Code</h4>
+                <p>We'll send a code to <span id="emailDisplay">{formData.email}</span></p>
+                
+                <button type="button" id="sendOtpBtn" className="otp-btn" onClick={handleSendOtp} disabled={loading || verificationMethod === 'google'}>
+                  {loading ? 'Sending...' : 'Send Verification Code'}
+                </button>
+                
+                {showOtpSection && (
+                  <div id="otpSection">
+                    <label>Enter 6-digit verification code</label>
+                    <input type="text" id="otpInput" maxLength="6" placeholder="000000" value={otp} onChange={(e) => setOtp(e.target.value)} />
+                    <button type="button" id="verifyOtpBtn" className="otp-btn" onClick={handleVerifyOtp} disabled={loading || otp.length < 6}>
+                      {loading ? 'Verifying...' : 'Verify Code'}
                     </button>
-
-                    {otpSent && (
-                      <div>
-                        <input
-                          type="text"
-                          maxLength={6}
-                          placeholder="Enter 6-digit OTP"
-                          value={otp}
-                          onChange={(e) => setOtp(e.target.value)}
-                        />
-                        <button type="button" onClick={verifyOtp}>
-                          {loading ? "Verifying..." : "Verify Code"}
-                        </button>
-                        {otpTimer > 0 && <p>Code expires in {formatTimer(otpTimer)}</p>}
-                      </div>
-                    )}
                   </div>
-                </>
-              )}
-
-              {statusMsg && (
-                <div
-                  className={statusMsg.includes("✅") ? "message-success" : "message-error"}
-                >
-                  {statusMsg}
-                </div>
-              )}
-            </div>
-
-            <div className="buttons">
-              <button type="button" onClick={back}>
-                Back
-              </button>
-              <button
-                type="button"
-                onClick={next}
-                disabled={!emailVerified && !googleVerified}
-              >
-                Continue
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Step 3: Role Selection */}
-        {step === 3 && (
-          <div className="form-step">
-            <h3>Select your business type</h3>
-            <div className="role-selection-grid">
-              {["farmer", "dealer", "retailer"].map((r) => (
-                <div
-                  key={r}
-                  className={`role-card ${role === r ? "active-role" : ""}`}
-                  onClick={() => setRole(r)}
-                >
-                  <h4>{r.charAt(0).toUpperCase() + r.slice(1)}</h4>
-                  <p>
-                    {r === "farmer" && "Manage fields, inventory, and connect directly with partners."}
-                    {r === "dealer" && "Manage stock, contracts, and logistics for multiple growers."}
-                    {r === "retailer" && "Handle purchases, sales, and consumer connections."}
-                  </p>
-                </div>
-              ))}
+                )}
+              </div>
             </div>
             <div className="buttons">
-              <button type="button" onClick={back}>
-                Back
-              </button>
-              <button type="button" onClick={next} disabled={!role}>
-                Continue
-              </button>
+              <button type="button" id="back1" onClick={() => setStep(1)}>Back</button>
+              <button type="button" id="next2" onClick={() => setStep(3)} disabled={!verificationMethod}>Continue</button>
             </div>
           </div>
-        )}
 
-        {/* Step 4: Additional Details */}
-        {step === 4 && (
-          <div className="form-step">
-            {role === "farmer" && (
-              <div>
-                <label>Aadhaar *</label>
-                <input
-                  value={extra.aadhaar}
-                  onChange={(e) => setExtra({ ...extra, aadhaar: e.target.value })}
-                />
-                <label>Farm Location *</label>
-                <input
-                  value={extra.farmLocation}
-                  onChange={(e) => setExtra({ ...extra, farmLocation: e.target.value })}
-                />
-                <button type="button" onClick={fetchLocation}>📍 Get Geotag Location</button>
+          {/* Step 3: Select Role */}
+          <div className="form-step" style={{ display: step === 3 ? 'block' : 'none' }}>
+              <h3 className="role-grid-title">Select your business type</h3>
+              <div className="role-selection-grid">
+                  <div className={`role-card ${formData.role === 'farmer' ? 'active-role' : ''}`} onClick={() => handleRoleSelection('farmer')}>
+                      <div className="role-icon"><span className="icon-text">🌾</span></div>
+                      <h4 className="role-title">Farmer</h4>
+                      <p className="role-subtitle">This account type can manage</p>
+                      <ul className="role-features"><p>The core of the supply chain. Manage fields, track inventory, and connect directly with partners...</p></ul>
+                  </div>
+                  <div className={`role-card ${formData.role === 'dealer' ? 'active-role' : ''}`} onClick={() => handleRoleSelection('dealer')}>
+                      <div className="role-icon"><span className="icon-text">🏢</span></div>
+                      <h4 className="role-title">Dealer</h4>
+                      <p className="role-subtitle">This account type can manage</p>
+                      <ul className="role-features"><p>Your hub for trade. Manage stock, contracts, and logistics for multiple growers...</p></ul>
+                  </div>
+                  <div className={`role-card ${formData.role === 'retailer' ? 'active-role' : ''}`} onClick={() => handleRoleSelection('retailer')}>
+                      <div className="role-icon"><span className="icon-text">🏪</span></div>
+                      <h4 className="role-title">Retailer</h4>
+                      <p className="role-subtitle">This account type can manage</p>
+                      <ul className="role-features"><p>The final link to the consumer. Manage your retail sites, handle purchases, and track sales...</p></ul>
+                  </div>
+              </div>
+              <input type="hidden" id="role" name="role" value={formData.role} required />
+              <div className="buttons">
+                <button type="button" id="back2" onClick={() => setStep(2)}>Back</button>
+                <button type="button" id="next3" onClick={() => setStep(4)} disabled={!formData.role}>Continue</button>
+              </div>
+          </div>
+          
+          {/* Step 4: Additional Details */}
+          <div className="form-step" style={{ display: step === 4 ? 'block' : 'none' }}>
+            {formData.role === 'farmer' && (
+              <div id="farmerFields">
+                <label>Aadhaar (12 digits) <span className="required">*</span></label>
+                <input type="text" id="aadhaar" name="aadhaar" value={formData.aadhaar} onChange={handleInputChange} />
+                <label>Farm Location <span className="required">*</span></label>
+                <input type="text" id="farmLocation" name="farmLocation" value={formData.farmLocation} onChange={handleInputChange} />
                 <label>Latitude</label>
-                <input value={extra.latitude} readOnly />
+                <input type="text" id="latitude" name="latitude" value={formData.latitude} onChange={handleInputChange} readOnly />
                 <label>Longitude</label>
-                <input value={extra.longitude} readOnly />
-                <label>Farm Size *</label>
-                <input
-                  value={extra.farmSize}
-                  onChange={(e) => setExtra({ ...extra, farmSize: e.target.value })}
-                />
+                <input type="text" id="longitude" name="longitude" value={formData.longitude} onChange={handleInputChange} readOnly />
+                <button type="button" id="getLocationBtn" className="otp-btn" onClick={handleGetLocation}>📍 Get Geotag Location</button>
+                <label>Farm Size <span className="required">*</span></label>
+                <input type="text" id="farmSize" name="farmSize" value={formData.farmSize} onChange={handleInputChange} />
               </div>
             )}
 
-            {role === "dealer" && (
-              <div>
-                <label>Business Name *</label>
-                <input
-                  value={extra.businessName}
-                  onChange={(e) => setExtra({ ...extra, businessName: e.target.value })}
-                />
-                <label>GSTIN *</label>
-                <input
-                  value={extra.gstin}
-                  onChange={(e) => setExtra({ ...extra, gstin: e.target.value })}
-                />
-                <label>Warehouse Address *</label>
-                <input
-                  value={extra.warehouseAddress}
-                  onChange={(e) => setExtra({ ...extra, warehouseAddress: e.target.value })}
-                />
-                <label>Preferred Commodities</label>
-                <input
-                  value={extra.preferredCommodities}
-                  onChange={(e) => setExtra({ ...extra, preferredCommodities: e.target.value })}
-                />
+            {formData.role === 'dealer' && (
+              <div id="dealerFields">
+                <label>Business Name <span className="required">*</span></label>
+                <input type="text" id="businessName" name="businessName" value={formData.businessName} onChange={handleInputChange} />
+                <label>GSTIN <span className="required">*</span></label>
+                <input type="text" id="gstin" name="gstin" value={formData.gstin} onChange={handleInputChange} />
+                <label>Warehouse Address <span className="required">*</span></label>
+                <input type="text" id="warehouseAddress" name="warehouseAddress" value={formData.warehouseAddress} onChange={handleInputChange} />
               </div>
             )}
 
-            {role === "retailer" && (
-              <div>
-                <label>Shop Name *</label>
-                <input
-                  value={extra.shopName}
-                  onChange={(e) => setExtra({ ...extra, shopName: e.target.value })}
-                />
-                <label>Shop Address *</label>
-                <input
-                  value={extra.shopAddress}
-                  onChange={(e) => setExtra({ ...extra, shopAddress: e.target.value })}
-                />
-                <label>Shop Type *</label>
-                <input
-                  value={extra.shopType}
-                  onChange={(e) => setExtra({ ...extra, shopType: e.target.value })}
-                />
-                <label>Monthly Purchase Volume</label>
-                <input
-                  value={extra.monthlyPurchaseVolume}
-                  onChange={(e) => setExtra({ ...extra, monthlyPurchaseVolume: e.target.value })}
-                />
+            {formData.role === 'retailer' && (
+              <div id="retailerFields">
+                <label>Shop Name <span className="required">*</span></label>
+                <input type="text" id="shopName" name="shopName" value={formData.shopName} onChange={handleInputChange} />
+                <label>Shop Address <span className="required">*</span></label>
+                <input type="text" id="shopAddress" name="shopAddress" value={formData.shopAddress} onChange={handleInputChange} />
+                <label>Shop Type <span className="required">*</span></label>
+                <input type="text" id="shopType" name="shopType" value={formData.shopType} onChange={handleInputChange} />
               </div>
             )}
 
             <div className="buttons">
-              <button type="button" onClick={back}>
-                Back
-              </button>
-              <button type="submit" disabled={loading}>
-                {loading ? "Signing up..." : "Signup"}
-              </button>
+              <button type="button" id="back3" onClick={() => setStep(3)}>Back</button>
+              <button type="submit" disabled={loading}>{loading ? 'Signing up...' : 'Signup'}</button>
             </div>
           </div>
-        )}
-      </form>
-    </div>
+        </form>
+      </div>
+    </>
   );
-}
+};
+
+export default Signup;
