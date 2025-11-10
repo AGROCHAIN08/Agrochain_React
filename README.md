@@ -125,6 +125,8 @@ cd Agrochain_React/frontend/agrochain-client
 
 # 2. Install all required dependencies
 npm install react-scripts@latest
+npm install react-router-dom axios
+npm install chart.js react-chartjs-2 @react-oauth/google
 ```
 
 #### 3. Create the Frontend Environment File
