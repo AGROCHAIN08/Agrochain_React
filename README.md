@@ -101,7 +101,7 @@ CLOUDINARY_API_SECRET=your-cloudinary-api-secret
 To run the server once:
 
 ```bash
-npm start
+node index.js
 ```
 
 Or, if you have **nodemon** installed (recommended for development):
