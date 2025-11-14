@@ -35,7 +35,7 @@ html {
     align-items: center;
     background-color: whitesmoke;
     color: white;
-    padding: 15px 30px;
+    padding: 5px 30px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     position: sticky;
     top: 0;
@@ -822,10 +822,6 @@ html {
 
 /* Mobile View - 768px and below */
 @media (max-width: 768px) {
-    /* .container {  <-- We keep this commented out to allow full-width */
-    /* padding: 0 15px; */
-    /* } */
-    
     .brand-name {
         font-size: 1.4em;
     }

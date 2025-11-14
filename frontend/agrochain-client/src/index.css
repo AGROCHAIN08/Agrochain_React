@@ -7,12 +7,17 @@
     box-sizing: border-box;
 }
 
+html, body, #root {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+}
+
 body {
     font-family: "Poppins", Arial, sans-serif;
     background-color: #f8f9fa;
     color: #333;
     min-height: 100vh;
-    /* We removed display:flex from here */
 }
 
 html {
@@ -21,4 +26,16 @@ html {
 
 a {
     text-decoration: none;
+}
+
+/* Remove any default spacing on root App container */
+#root {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Ensure no gaps between navbar and content */
+.App {
+    margin: 0;
+    padding: 0;
 }
