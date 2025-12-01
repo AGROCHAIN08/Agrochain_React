@@ -22,7 +22,7 @@ const FarmerNavbar = ({ user, notificationCount, onSignout, onNavigate, activeSe
   }, []);
 
   return (
-    <nav className="navbar">
+    <nav className="navbar farmer-navbar">
       <div className="nav-left">
         <img src="https://ik.imagekit.io/a2wpi1kd9/imgToUrl/image-to-url_ThyEiMVLh" alt="AgroChain Logo" className="logo" />
         <span className="brand-name">Agro<span className="chain-text">Chain</span></span>
