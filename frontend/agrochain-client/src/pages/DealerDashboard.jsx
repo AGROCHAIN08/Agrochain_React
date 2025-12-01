@@ -435,10 +435,6 @@ const DealerDashboard = () => {
                 <main className="content-area">
                     {/* BROWSE SECTION */}
                     <section className={activeSection === 'browse' ? 'active-section' : 'hidden-section'}>
-                        <div className="section-header">
-                            <h2>🌾 Marketplace</h2>
-                            <p style={{color:'#666'}}>Browse and purchase fresh produce directly from farmers.</p>
-                        </div>
                         <div className="products-grid">
                             {getFilteredProducts().length === 0 ? <div className="empty-state"><h3>No products found.</h3></div> :
                             getFilteredProducts().map(p => (
@@ -498,14 +494,13 @@ const DealerDashboard = () => {
                     {/* VEHICLES SECTION */}
                     <section className={activeSection === 'vehicles' ? 'active-section' : 'hidden-section'}>
                         <div className="section-header">
-                            <h2>🚗 Vehicle Fleet Management</h2>
-                            <p style={{color:'#6b7280'}}>Manage your logistics and delivery fleet.</p>
+                            <h2>Vehicle Management</h2>
                         </div>
 
                         {/* Enhanced Add Vehicle Form */}
                         <div className="vehicle-form-container">
                              <div className="vehicle-form-header">
-                                <h3>➕ Add New Vehicle</h3>
+                                <h3>Add New Vehicle</h3>
                              </div>
                              <form onSubmit={handleAddVehicle} className="vehicle-add-form">
                                 <div className="form-group">
@@ -698,9 +693,6 @@ const VehicleCard = ({ vehicle, onDelete, onFree }) => {
             <div className={`vehicle-status-bar ${statusClass}`}></div>
             <div className="vehicle-card-body">
                 <div className="vehicle-header-row">
-                    <div className={`vehicle-icon-box ${isTruck ? 'truck' : 'van'}`}>
-                        {isTruck ? '🚚' : '🚐'}
-                    </div>
                     <span className={`vehicle-status-badge ${statusClass}`}>
                         {vehicle.currentStatus}
                     </span>
@@ -739,44 +731,171 @@ const VehicleCard = ({ vehicle, onDelete, onFree }) => {
     );
 };
 
-const InventoryCard = ({ item, onPriceChange, onQtyChange, onRemove, onViewReviews }) => (
-    <div className="modern-card"> 
-        <img src={item.imageUrl} alt={item.productName} style={{width:'100%', height:'120px', objectFit:'cover'}} />
-        <div className="card-body">
-            <h4>{item.productName}</h4> 
-            <p>Qty: {item.quantity} | ₹{item.unitPrice}</p> 
-            <div style={{marginTop:'10px', display:'flex', gap:'5px', flexWrap:'wrap'}}>
-                <button className="btn-secondary" style={{fontSize:'0.8em', padding:'5px'}} onClick={() => onQtyChange(item)}>Qty</button>
-                <button className="btn-secondary" style={{fontSize:'0.8em', padding:'5px'}} onClick={() => onPriceChange(item)}>Price</button>
-                <button className="btn-del" style={{fontSize:'0.8em', padding:'5px'}} onClick={() => onRemove(item)}>🗑️</button>
-                {item.retailerReviews?.length > 0 && <button className="btn-text" onClick={() => onViewReviews('viewReviews', item)}>⭐ Reviews</button>}
+const InventoryCard = ({ item, onPriceChange, onQtyChange, onRemove, onViewReviews }) => {
+    // Determine stock status
+    const isLowStock = item.quantity < 50; // Threshold for low stock
+    const totalValue = (item.quantity * item.unitPrice).toLocaleString('en-IN');
+
+    return (
+        <div className="inventory-card-pro">
+            <div className="inv-card-image">
+                <img src={item.imageUrl} alt={item.productName} />
+                <span className={`stock-badge ${isLowStock ? 'low-stock' : 'in-stock'}`}>
+                    {isLowStock ? '⚠️ Low Stock' : '✅ In Stock'}
+                </span>
             </div>
-        </div> 
-    </div>
-);
+            
+            <div className="inv-card-details">
+                <div className="inv-header">
+                    <h4>{item.productName}</h4>
+                    <span className="inv-type">{item.productType}</span>
+                </div>
+
+                <div className="inv-stats-grid">
+                    <div className="inv-stat">
+                        <span className="label">Quantity</span>
+                        <span className="value">{item.quantity} <small>{item.unitOfSale}</small></span>
+                    </div>
+                    <div className="inv-stat">
+                        <span className="label">Unit Price</span>
+                        <span className="value" style={{color: '#10b981'}}>₹{item.unitPrice}</span>
+                    </div>
+                    <div className="inv-stat full-width">
+                        <span className="label">Total Valuation</span>
+                        <span className="value">₹{totalValue}</span>
+                    </div>
+                </div>
+
+                <div className="inv-actions">
+                    <button className="inv-action-btn" onClick={() => onQtyChange(item)}>
+                        📦 Change Qty
+                    </button>
+                    <button className="inv-action-btn" onClick={() => onPriceChange(item)}>
+                        🏷️ Set Price
+                    </button>
+                    <button className="inv-action-btn delete" onClick={() => onRemove(item)} title="Remove from Inventory">
+                        🗑️
+                    </button>
+                </div>
+
+                {item.retailerReviews && item.retailerReviews.length > 0 && (
+                    <button className="view-reviews-link" onClick={() => onViewReviews('viewReviews', item)}>
+                        ⭐ View {item.retailerReviews.length} Retailer Reviews
+                    </button>
+                )}
+            </div>
+        </div>
+    );
+};
 
 const FarmerOrderCard = ({ item, onAssignVehicle, onPlaceBid, onAddReview, onViewReceipt }) => {
+    let statusBadge = null;
     let action = null;
     const skipReview = item.quantity >= item.originalHarvestQuantity;
 
-    if (item.bidStatus === 'Accepted') action = <button className="btn-primary" onClick={() => onViewReceipt('receipt', item)}>Receipt</button>;
-    else if (item.bidStatus === 'Rejected') action = <span className="badge" style={{background:'#fee2e2', color:'red'}}>Rejected</span>;
-    else if (item.bidPlaced) action = <span className="badge" style={{background:'#fef3c7', color:'#d97706'}}>Bid Pending</span>;
-    else if (item.vehicleAssigned) {
-        if (!item.reviewSubmitted && !skipReview) action = <button className="btn-secondary" onClick={() => onAddReview('review', item)}>Review</button>;
-        else action = <button className="btn-primary" onClick={() => onPlaceBid('bid', item)}>Place Bid</button>;
+    // --- Status Logic ---
+    if (item.bidStatus === 'Accepted') {
+        action = (
+            <button className="btn-action primary" onClick={() => onViewReceipt('receipt', item)}>
+                📄 View Receipt
+            </button>
+        );
+    } else if (item.bidStatus === 'Rejected') {
+        statusBadge = <span className="status-badge error">❌ Rejected</span>;
+    } else if (item.bidPlaced) {
+        statusBadge = <span className="status-badge warning">⏳ Bid Pending</span>;
+    } else if (item.vehicleAssigned) {
+        statusBadge = <span className="status-badge info">🚚 Vehicle Assigned</span>;
+        if (!item.reviewSubmitted && !skipReview) {
+             action = (
+                <button className="btn-action secondary" onClick={() => onAddReview('review', item)}>
+                    ⭐ Write Review
+                </button>
+             );
+        } else {
+             action = (
+                <button className="btn-action primary" onClick={() => onPlaceBid('bid', item)}>
+                    💰 Place Bid
+                </button>
+             );
+        }
     } else {
-        action = <button className="btn-primary" style={{background:'#ef4444'}} onClick={() => onAssignVehicle('assignVehicle', item)}>Assign Vehicle</button>;
+        statusBadge = <span className="status-badge danger">⚠️ Action Needed</span>;
+        action = (
+            <button className="btn-action danger" onClick={() => onAssignVehicle('assignVehicle', item)}>
+                🚚 Assign Vehicle
+            </button>
+        );
     }
 
+    // Date formatter
+    const orderDate = item.orderId.includes('-') 
+        ? new Date(parseInt(item.orderId.split('-')[1])).toLocaleDateString() 
+        : 'Recent';
+
     return (
-        <div className="modern-card"> 
-             <img src={item.imageUrl} alt={item.varietySpecies} style={{width:'100%', height:'120px', objectFit:'cover'}} />
-             <div className="card-body">
-                <h4>{item.varietySpecies}</h4> 
-                <p>Qty: {item.quantity} | ₹{item.targetPrice}</p>
-                <div style={{marginTop:'10px'}}>{action}</div>
-             </div> 
+        <div className="order-card-pro">
+            {/* Header: ID and Status */}
+            <div className="order-header">
+                <div className="order-id-label">
+                    <span>ID:</span>
+                    <span>{item.receiptNumber || item.serverOrderId || 'Processing...'}</span>
+                </div>
+                {statusBadge}
+            </div>
+            
+            {/* Main Content */}
+            <div className="order-content">
+                <div className="order-image">
+                     <img src={item.imageUrl} alt={item.varietySpecies} />
+                </div>
+                
+                <div className="order-details">
+                    <h4 className="product-title">
+                        {item.varietySpecies} 
+                        <span className="product-type">({item.productType})</span>
+                    </h4>
+                    
+                    <div className="detail-grid">
+                        <div className="detail-item">
+                            <span className="label">Farmer</span>
+                            <span className="value">{item.farmerName || item.farmerEmail || 'Fetching...'}</span>
+                        </div>
+                        <div className="detail-item">
+                            <span className="label">Quantity</span>
+                            <span className="value">{item.quantity} {item.unitOfSale}</span>
+                        </div>
+                        <div className="detail-item">
+                            <span className="label">Target Price</span>
+                            <span className="value">₹{item.targetPrice}</span>
+                        </div>
+                        <div className="detail-item">
+                            <span className="label">Bid Status</span>
+                            <span className="value" style={{textTransform:'capitalize'}}>
+                                {item.bidStatus || 'Not Placed'}
+                            </span>
+                        </div>
+
+                        {/* Special Receipt Box if available */}
+                        {item.receiptNumber && (
+                             <div className="detail-item receipt-box">
+                                <span className="label">Receipt Generated</span>
+                                <span className="value">#{item.receiptNumber}</span>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            {/* Footer: Date and Action Button */}
+            <div className="order-footer">
+                <div className="order-date">
+                    Ordered on: {orderDate}
+                </div>
+                <div className="order-actions-container">
+                    {action}
+                </div>
+            </div>
         </div>
     );
 };
