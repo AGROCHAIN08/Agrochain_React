@@ -19,10 +19,10 @@ const About = () => {
               <h2>Our Story</h2>
               <div className="underline"></div>
               <p>
-                  AgroChain was founded in 2025 with a simple mission...
+                 AgroChain was founded in 2025 with a simple mission: to make agricultural trade more transparent, fair, and efficient. What started as a small idea to connect local farmers with buyers has now grown into a trusted platform empowering thousands of agricultural producers across the globe.
               </p>
               <p>
-                  We believe that agriculture is the backbone of our economy...
+                  We believe that agriculture is the backbone of our economy – and through technology, we aim to make every link in the supply chain traceable, reliable, and sustainable. From farmers and wholesalers to retailers and consumers, AgroChain ensures that every transaction adds value and fosters trust.
               </p>
           </div>
       </section>
