@@ -435,10 +435,6 @@ const DealerDashboard = () => {
                 <main className="content-area">
                     {/* BROWSE SECTION */}
                     <section className={activeSection === 'browse' ? 'active-section' : 'hidden-section'}>
-                        <div className="section-header">
-                            <h2>🌾 Marketplace</h2>
-                            <p style={{color:'#666'}}>Browse and purchase fresh produce directly from farmers.</p>
-                        </div>
                         <div className="products-grid">
                             {getFilteredProducts().length === 0 ? <div className="empty-state"><h3>No products found.</h3></div> :
                             getFilteredProducts().map(p => (
