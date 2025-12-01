@@ -389,13 +389,40 @@ const FarmerDashboard = () => {
                       </div>
                       <div className="product-detail-item price-highlight">
                         <div className="product-detail-label">Price</div>
-                        <div className="product-detail-value">₹{crop.targetPrice} per {crop.unitOfSale}</div>
+                        <div className="product-detail-value">{crop.targetPrice} per {crop.unitOfSale}</div>
                       </div>
                     </div>
-                    {/* ... Reviews ... */}
+                    
+                    {/* Dealer Reviews Section */}
+                    {crop.reviews && crop.reviews.length > 0 && (
+                      <div className="product-reviews-section" style={{marginTop: '15px', padding: '12px', background: '#f9fafb', borderRadius: '8px', border: '1px solid #e5e7eb'}}>
+                        <h4 style={{fontSize: '14px', margin: '0 0 10px 0', color: '#374151'}}>
+                          Reviews ({crop.reviews.length}) - Avg: {(crop.reviews.reduce((sum, r) => sum + r.rating, 0) / crop.reviews.length).toFixed(1)}/5
+                        </h4>
+                        <div className="reviews-list">
+                          {crop.reviews.slice(0, 2).map((review, index) => (
+                            <div key={index} style={{marginBottom: '10px', padding: '10px', background: 'white', borderRadius: '6px', borderLeft: '3px solid #10b981'}}>
+                              <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px'}}>
+                                <span style={{fontWeight: '600', color: '#10b981', fontSize: '13px'}}>{review.quality}</span>
+                                <span style={{color: '#f59e0b', fontSize: '13px'}}>{'★'.repeat(review.rating)}</span>
+                              </div>
+                              <p style={{margin: '5px 0', fontSize: '13px', color: '#374151', lineHeight: '1.5'}}>{review.comments}</p>
+                              <div style={{display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#6b7280', marginTop: '5px'}}>
+                                <small>By: {review.dealerEmail}</small>
+                                <small>{review.date ? new Date(review.date).toLocaleDateString() : 'Recent'}</small>
+                              </div>
+                            </div>
+                          ))}
+                          {crop.reviews.length > 2 && (
+                            <small style={{color: '#6b7280', fontSize: '12px'}}>+{crop.reviews.length - 2} more reviews</small>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    
                     <div className="product-actions">
-                      <button className="action-btn edit-btn" onClick={() => handleEditClick(crop)}>📝 Edit</button>
-                      <button className="action-btn delete-btn" onClick={() => handleDeleteCrop(crop._id)}>🗑️ Delete</button>
+                      <button className="action-btn edit-btn" onClick={() => handleEditClick(crop)}>Edit</button>
+                      <button className="action-btn delete-btn" onClick={() => handleDeleteCrop(crop._id)}>Delete</button>
                     </div>
                   </div>
                 </div>
