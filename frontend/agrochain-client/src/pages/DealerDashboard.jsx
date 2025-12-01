@@ -3,6 +3,8 @@ import { useAuth } from '../hooks/useAuth.jsx';
 import api from '../services/api.jsx';
 import { useNavigate } from 'react-router-dom';
 import '../assets/css/dealer.css';
+import { useDispatch, useSelector } from 'react-redux';
+import { initializeCart, addToCart, removeFromCart, clearCart } from '../redux/slices/cartSlice';
 
 // --- DealerNavbar Component ---
 const DealerNavbar = ({ user, cartCount, onSignout, onNavigate, activeSection }) => {
@@ -126,7 +128,8 @@ const DealerDashboard = () => {
     const [message, setMessage] = useState({ vehicle: '', product: '', inventory: '' });
 
     // Cart & Orders (LocalStorage)
-    const [cart, setCart] = useState(() => JSON.parse(localStorage.getItem("dealerCart")) || []);
+    const dispatch = useDispatch();
+    const { items: cart, totalItems } = useSelector((state) => state.cart);
     const [orders, setOrders] = useState(() => JSON.parse(localStorage.getItem("dealerOrders")) || []);
 
     // Filters & Modals
@@ -177,7 +180,9 @@ const DealerDashboard = () => {
     useEffect(() => { loadAllData(); }, [loadAllData]);
     
     // Sync Storage
-    useEffect(() => { localStorage.setItem("dealerCart", JSON.stringify(cart)); }, [cart]);
+    useEffect(() => {
+    dispatch(initializeCart('dealer'));
+    }, [dispatch]);
     useEffect(() => { localStorage.setItem("dealerOrders", JSON.stringify(orders)); }, [orders]);
 
     // Poll for updates
@@ -246,16 +251,22 @@ const DealerDashboard = () => {
         if (!qty || qty <= 0) return alert("Please enter valid quantity");
         if (qty > product.harvestQuantity) return alert("Exceeds available stock");
         
-        setCart(prev => {
-            const exist = prev.find(i => i._id === product._id);
-            return exist ? prev.map(i => i._id === product._id ? { ...i, quantity: i.quantity + qty } : i) 
-                         : [...prev, { ...product, quantity: qty, originalHarvestQuantity: product.harvestQuantity }];
-        });
+        dispatch(addToCart({
+            item: { 
+            ...product, 
+            quantity: qty, 
+            originalHarvestQuantity: product.harvestQuantity 
+            },
+            userRole: 'dealer'
+        }));
+        
         setProductQuantities({ ...productQuantities, [product._id]: '' });
         alert("Added to cart");
     };
 
-    const handleRemoveFromCart = (id) => setCart(prev => prev.filter(i => i._id !== id));
+    const handleRemoveFromCart = (id) => {
+        dispatch(removeFromCart({ itemId: id, userRole: 'dealer' }));
+    };
 
     const handleOrderFromCart = (item) => {
         const product = allProducts.find(p => p._id === item._id);
@@ -401,7 +412,7 @@ const DealerDashboard = () => {
         <>
             <DealerNavbar 
                 user={profile} 
-                cartCount={cart.length} 
+                cartCount={totalItems} 
                 onSignout={handleSignout} 
                 onNavigate={handleNavigate}
                 activeSection={activeSection}

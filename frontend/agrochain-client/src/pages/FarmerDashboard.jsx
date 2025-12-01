@@ -3,6 +3,8 @@ import { useAuth } from '../hooks/useAuth';
 import api from '../services/api';
 import '../assets/css/farmer.css'; 
 import { useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { setNotifications, addNotification } from '../redux/slices/notificationSlice';
 
 // --- FarmerNavbar Component (from farmer.html) ---
 // THIS IS DEFINED *INSIDE* THE DASHBOARD FILE
@@ -93,7 +95,8 @@ const FarmerDashboard = () => {
   // Add state to track selected order for receipt
   const [selectedReceiptOrder, setSelectedReceiptOrder] = useState(null);
 
-  const [notifications, setNotifications] = useState([]);
+  const dispatch = useDispatch();
+  const { notifications, unreadCount } = useSelector((state) => state.notification);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -120,7 +123,7 @@ const FarmerDashboard = () => {
       ]);
       setCrops(cropsRes.data);
       setOrders(ordersRes.data);
-      setNotifications(notificationsRes.data);
+      dispatch(setNotifications(notificationsRes.data));
       setProfile(profileRes.data);
       setEditProfileData({
         farmLocation: profileRes.data.farmLocation || '',
@@ -295,7 +298,6 @@ const FarmerDashboard = () => {
     }
   };
   
-  const unreadCount = notifications.filter(n => !n.read).length;
 
   return (
     <>

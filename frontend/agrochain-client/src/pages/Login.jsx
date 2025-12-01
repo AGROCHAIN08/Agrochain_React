@@ -1,16 +1,25 @@
+// src/pages/Login.jsx - COMPLETE FILE WITH REDUX
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import api from '../services/api';
 import { GoogleLogin } from '@react-oauth/google';
-import '../assets/css/login.css'; 
+import '../assets/css/login.css';
+
+// 👇 ADD REDUX IMPORTS
+import { useDispatch, useSelector } from 'react-redux';
+import { loginStart, loginSuccess, loginFailure } from '../redux/slices/authSlice';
 
 // Import the new central Navbar
-import Navbar from '../components/Navbar'; 
+import Navbar from '../components/Navbar';
 
 // Login Page component
 const Login = () => {
-  // ... (all your existing login logic from the previous step) ...
+  // 👇 ADD REDUX HOOKS
+  const dispatch = useDispatch();
+  const { loading: reduxLoading, error: reduxError } = useSelector((state) => state.auth);
+
+  // Local state for form inputs and UI
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
   const [showOtp, setShowOtp] = useState(false);
@@ -35,6 +44,7 @@ const Login = () => {
     return () => clearInterval(interval);
   }, [showOtp, timer]);
 
+  // Redirect based on role
   const redirectToRolePage = (user) => {
     if (user.email === "agrochain08@gmail.com") {
       navigate("/admin");
@@ -47,24 +57,39 @@ const Login = () => {
     }
   };
 
+  // 👇 UPDATED: Google Login with Redux
   const handleGoogleLogin = async (credentialResponse) => {
+    dispatch(loginStart()); // 👈 Redux action - start loading
     setLoading(true);
     setStatus('Verifying Google Sign-In...');
+    
     try {
       const res = await api.post('/auth/login-google', { token: credentialResponse.credential });
-      const { user } = res.data;
-      login(user); // Save to context
+      const { user, token } = res.data;
+      
+      // Update Redux state
+      dispatch(loginSuccess({ user, token })); // 👈 Redux action - success
+      
+      // Keep AuthContext for backward compatibility
+      login(user, token);
+      
       setStatus(`Welcome back, ${user.firstName}! Redirecting...`);
       redirectToRolePage(user);
     } catch (error) {
-      setStatus(error.response?.data?.msg || 'Google login failed');
+      const errorMsg = error.response?.data?.msg || 'Google login failed';
+      
+      // Update Redux with error
+      dispatch(loginFailure(errorMsg)); // 👈 Redux action - failure
+      setStatus(errorMsg);
     }
     setLoading(false);
   };
 
+  // Send OTP (no Redux needed - temporary operation)
   const handleSendOtp = async (isResend = false) => {
     setLoading(true);
     setStatus('Sending OTP...');
+    
     try {
       const response = await api.post('/auth/send-login-otp', { email });
       setStatus(response.data.msg);
@@ -76,29 +101,41 @@ const Login = () => {
     setLoading(false);
   };
 
+  // 👇 UPDATED: Verify OTP with Redux
   const handleVerifyOtp = async () => {
+    dispatch(loginStart()); // 👈 Redux action - start loading
     setLoading(true);
     setStatus('Verifying OTP...');
+    
     try {
       const response = await api.post('/auth/verify-login-otp', { email, otp });
-      const { user } = response.data;
-      login(user);
+      const { user, token } = response.data;
+      
+      // Update Redux state
+      dispatch(loginSuccess({ user, token })); // 👈 Redux action - success
+      
+      // Keep AuthContext for backward compatibility
+      login(user, token);
+      
       setStatus(`Welcome back, ${user.firstName}! Redirecting...`);
       redirectToRolePage(user);
     } catch (error) {
-      setStatus(error.response?.data?.msg || 'Invalid OTP');
+      const errorMsg = error.response?.data?.msg || 'Invalid OTP';
+      
+      // Update Redux with error
+      dispatch(loginFailure(errorMsg)); // 👈 Redux action - failure
+      setStatus(errorMsg);
     }
     setLoading(false);
   };
 
-
   return (
     <>
-      <Navbar /> {/* <-- Use the imported component */}
+      <Navbar />
       <div className="signup-container">
-        {/* ... (all your login HTML) ... */}
-         <h2>Login to AgroChain</h2>
+        <h2>Login to AgroChain</h2>
         
+        {/* Status message */}
         {status && 
           <div id="loginStatus" style={{
             display: 'block',
@@ -112,6 +149,7 @@ const Login = () => {
           </div>
         }
 
+        {/* Google Sign-In Section */}
         <div className="google-signin-section">
           <h4>Option 1: Sign in with Google</h4>
           <GoogleLogin
@@ -129,6 +167,7 @@ const Login = () => {
         
         <div className="divider"><span>OR</span></div>
 
+        {/* Email + OTP Section */}
         <div className="email-otp-section">
           <h4>Option 2: Login with Email + OTP</h4>
           <input 
@@ -139,7 +178,12 @@ const Login = () => {
             onChange={(e) => setEmail(e.target.value)}
             disabled={showOtp || loading}
           />
-          <button type="button" id="sendOtpBtn" onClick={() => handleSendOtp(false)} disabled={loading || showOtp}>
+          <button 
+            type="button" 
+            id="sendOtpBtn" 
+            onClick={() => handleSendOtp(false)} 
+            disabled={loading || showOtp}
+          >
             {loading ? 'Sending...' : 'Send OTP'}
           </button>
 
@@ -155,27 +199,36 @@ const Login = () => {
                 onChange={(e) => setOtp(e.target.value)}
                 disabled={loading}
               />
-              <button type="button" id="verifyOtpBtn" onClick={handleVerifyOtp} disabled={loading || otp.length < 6}>
+              <button 
+                type="button" 
+                id="verifyOtpBtn" 
+                onClick={handleVerifyOtp} 
+                disabled={loading || otp.length < 6}
+              >
                 {loading ? 'Verifying...' : 'Verify & Login'}
               </button>
               
               <p className="otp-timer" id="otpTimer">
-                {timer > 0 ? `Code expires in ${Math.floor(timer / 60)}:${(timer % 60).toString().padStart(2, '0')}` : 'Code expired'}
+                {timer > 0 
+                  ? `Code expires in ${Math.floor(timer / 60)}:${(timer % 60).toString().padStart(2, '0')}` 
+                  : 'Code expired'}
               </p>
               
-              <button 
-                type="button" 
-                id="resendOtpBtn" 
-                style={{ display: timer === 0 ? 'block' : 'none' }}
-                onClick={() => handleSendOtp(true)}
-                disabled={loading}
-              >
-                Resend Code
-              </button>
+              {timer === 0 && (
+                <button 
+                  type="button" 
+                  id="resendOtpBtn"
+                  onClick={() => handleSendOtp(true)}
+                  disabled={loading}
+                >
+                  Resend Code
+                </button>
+              )}
             </div>
           )}
         </div>
         
+        {/* Sign Up Link */}
         <div className="new-user-card">
           <p>New to AgroChain?</p>
           <Link to="/signup" className="signup-btn">

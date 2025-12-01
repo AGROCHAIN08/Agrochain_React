@@ -3,6 +3,8 @@ import { useAuth } from '../hooks/useAuth';
 import api from '../services/api';
 import { useNavigate } from 'react-router-dom';
 import '../assets/css/retailer.css';
+import { useDispatch, useSelector } from 'react-redux';
+import { initializeCart, addToCart, removeFromCart, clearCart } from '../redux/slices/cartSlice';
 
 // --- RetailerNavbar Component ---
 const RetailerNavbar = ({ user, cartCount, onSignout, onNavigate, activeSection }) => {
@@ -79,10 +81,8 @@ const RetailerDashboard = () => {
     const [error, setError] = useState(null);
 
     // Cart State
-    const [cart, setCart] = useState(() => {
-        const savedCart = localStorage.getItem("retailerCart");
-        return savedCart ? JSON.parse(savedCart) : [];
-    });
+    const dispatch = useDispatch();
+    const { items: cart, totalItems, totalAmount } = useSelector((state) => state.cart);
 
     // Filter State
     const [filters, setFilters] = useState({ filterType: '', filterName: '', filterPrice: '' });
@@ -126,8 +126,8 @@ const RetailerDashboard = () => {
     }, [user, loadAllData]);
 
     useEffect(() => {
-        localStorage.setItem("retailerCart", JSON.stringify(cart));
-    }, [cart]);
+        dispatch(initializeCart('retailer'));
+    }, [dispatch]);
 
     // --- Handlers ---
     const handleSignout = () => {
@@ -175,6 +175,8 @@ const RetailerDashboard = () => {
 
     const handleAddToCart = (item) => {
         const qty = productQuantities[item._id] || 0;
+
+        // Validation
         if (!qty || qty <= 0) {
             alert('Please enter a valid quantity.');
             return;
@@ -184,22 +186,26 @@ const RetailerDashboard = () => {
             return;
         }
 
-        setCart(prevCart => {
-            const existingItem = prevCart.find(i => i._id === item._id);
-            if (existingItem) {
-                return prevCart.map(i =>
-                    i._id === item._id ? { ...i, quantity: i.quantity + qty } : i
-                );
-            } else {
-                return [...prevCart, { ...item, quantity: qty }];
-            }
-        });
-        alert('Added to cart!');
-        setProductQuantities(prev => ({ ...prev, [item._id]: '' }));
+        // Dispatch to Redux
+        dispatch(
+            addToCart({
+                item: { ...item, quantity: qty },
+                userRole: "retailer"
+            })
+        );
+
+        alert("Added to cart!");
+
+        // Clear input field after adding
+        setProductQuantities(prev => ({ 
+            ...prev, 
+            [item._id]: '' 
+        }));
     };
 
+
     const handleRemoveFromCart = (itemId) => {
-        setCart(prevCart => prevCart.filter(item => item._id !== itemId));
+        dispatch(removeFromCart({ itemId, userRole: 'retailer' }));
     };
 
     const handleCheckout = async () => {
@@ -213,7 +219,10 @@ const RetailerDashboard = () => {
                 cartItems: cart
             });
             alert('✅ Order placed successfully! Please go to "My Orders" to pay.');
-            setCart([]);
+            
+            // 👇 CHANGED: Use Redux action instead of setCart
+            dispatch(clearCart('retailer'));
+            
             setActiveSection('orders');
             loadAllData();
         } catch (err) {
@@ -335,7 +344,7 @@ const RetailerDashboard = () => {
         <>
             <RetailerNavbar 
                 user={profile} 
-                cartCount={cartCount}
+                cartCount={totalItems}
                 onSignout={handleSignout} 
                 onNavigate={handleNavigate} 
                 activeSection={activeSection}
