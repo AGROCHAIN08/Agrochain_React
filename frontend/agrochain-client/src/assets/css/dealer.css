@@ -1075,3 +1075,95 @@ body {
     .order-footer { flex-direction: column; align-items: stretch; text-align: center; }
     .btn-action { justify-content: center; width: 100%; }
 }
+
+/* ===========================
+   RETAILER ORDER STYLES
+   =========================== */
+
+/* Item List in Card */
+.order-items-list {
+    background: #f9fafb;
+    border-radius: 8px;
+    padding: 10px;
+    margin: 10px 0;
+    max-height: 100px;
+    overflow-y: auto;
+    border: 1px solid #f3f4f6;
+}
+
+.order-item-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    padding: 4px 0;
+    border-bottom: 1px dashed #e5e7eb;
+    color: var(--text-dark);
+}
+
+.order-item-row:last-child {
+    border-bottom: none;
+}
+
+.order-item-row span:last-child {
+    font-weight: 600;
+}
+
+/* Total Amount Display */
+.order-total-display {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-top: 2px solid #f3f4f6;
+    margin-top: 10px;
+}
+
+.total-label {
+    font-size: 0.9rem;
+    color: var(--text-light);
+    font-weight: 600;
+}
+
+.total-value {
+    font-size: 1.2rem;
+    color: var(--primary);
+    font-weight: 800;
+}
+
+/* Receipt Modal Specifics */
+.receipt-paper {
+    background: #fff;
+    padding: 30px;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 0 15px rgba(0,0,0,0.05);
+    margin-bottom: 20px;
+    font-family: 'Courier New', Courier, monospace; /* Receipt feel */
+}
+
+.receipt-header {
+    text-align: center;
+    border-bottom: 2px dashed #333;
+    padding-bottom: 15px;
+    margin-bottom: 20px;
+}
+
+.receipt-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+}
+
+.receipt-divider {
+    border-bottom: 1px dashed #ccc;
+    margin: 15px 0;
+}
+
+.receipt-total {
+    font-size: 1.1rem;
+    font-weight: bold;
+    border-top: 2px solid #333;
+    border-bottom: 2px solid #333;
+    padding: 10px 0;
+    margin-top: 10px;
+}

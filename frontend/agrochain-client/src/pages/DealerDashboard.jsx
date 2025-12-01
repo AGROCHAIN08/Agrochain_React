@@ -139,7 +139,8 @@ const DealerDashboard = () => {
         bid: false, 
         receipt: false, 
         viewReviews: false,
-        editProfile: false // New modal state
+        editProfile: false,
+        retailerReceipt: false 
     });
     const [selectedData, setSelectedData] = useState(null);
     
@@ -541,7 +542,7 @@ const DealerDashboard = () => {
                                     />
                                 </div>
                                 <button type="submit" className="btn-add-vehicle">
-                                    Add to Fleet
+                                    Add Vechical
                                 </button>
                              </form>
                         </div>
@@ -559,12 +560,18 @@ const DealerDashboard = () => {
 
                     {/* RETAILER ORDERS SECTION */}
                     <section className={activeSection === 'retailerOrders' ? 'active-section' : 'hidden-section'}>
-                        <div className="section-header"><h2>🛍️ Orders from Retailers</h2></div>
-                        <div className="orders-grid">
-                            {retailerOrders.length === 0 ? <div className="empty-state"><h3>No orders received.</h3></div> :
-                            retailerOrders.map(order => <RetailerOrderCard key={order._id} order={order} />)}
-                        </div>
-                    </section>
+                    <div className="section-header"><h2>🛍️ Orders from Retailers</h2></div>
+                    <div className="orders-grid">
+                    {retailerOrders.length === 0 ? <div className="empty-state"><h3>No orders received.</h3></div> :
+                    retailerOrders.map(order => (
+                        <RetailerOrderCard 
+                            key={order._id} 
+                            order={order} 
+                            onViewReceipt={openModal} // Pass the handler
+                        />
+                    ))}
+                    </div>
+                     </section>
 
                     {/* PROFILE SECTION - PROFESSIONAL */}
                     <section className={activeSection === 'profile' ? 'active-section' : 'hidden-section'}>
@@ -644,12 +651,18 @@ const DealerDashboard = () => {
                 product={selectedData} 
             />
 
-            {/* NEW PROFILE EDIT MODAL */}
             <EditProfileModal
                 show={modal.editProfile}
                 onClose={() => closeModal('editProfile')}
                 profileData={profile}
                 onSave={handleProfileUpdate}
+            />
+
+            <RetailerReceiptModal 
+                show={modal.retailerReceipt} 
+                onClose={() => closeModal('retailerReceipt')} 
+                order={selectedData} 
+                dealer={profile} 
             />
         </>
     );
@@ -788,6 +801,68 @@ const InventoryCard = ({ item, onPriceChange, onQtyChange, onRemove, onViewRevie
     );
 };
 
+const RetailerReceiptModal = ({ show, onClose, order, dealer }) => {
+    if (!show || !order) return null;
+
+    return (
+        <div className="modal" style={{display:'block'}} onClick={onClose}>
+            <div className="modal-content" onClick={e => e.stopPropagation()} style={{maxWidth:'500px'}}>
+                <span className="close" onClick={onClose}>&times;</span>
+                
+                <div className="receipt-paper" id="printable-receipt">
+                    <div className="receipt-header">
+                        <h2>TAX INVOICE</h2>
+                        <p><strong>AgroChain Dealer Network</strong></p>
+                        <p>{dealer?.businessName}</p>
+                        <p style={{fontSize:'0.8rem'}}>{dealer?.warehouseAddress}</p>
+                    </div>
+
+                    <div className="receipt-row">
+                        <span><strong>Order ID:</strong></span>
+                        <span>#{order._id.slice(-8).toUpperCase()}</span>
+                    </div>
+                    <div className="receipt-row">
+                        <span><strong>Date:</strong></span>
+                        <span>{new Date(order.createdAt || Date.now()).toLocaleDateString()}</span>
+                    </div>
+                    <div className="receipt-row">
+                        <span><strong>Billed To:</strong></span>
+                        <span>{order.retailerEmail}</span>
+                    </div>
+
+                    <div className="receipt-divider"></div>
+
+                    <div className="receipt-row" style={{fontWeight:'bold', borderBottom:'1px solid #eee', paddingBottom:'5px'}}>
+                        <span>Item</span>
+                        <span>Qty</span>
+                    </div>
+
+                    {order.products.map((p, i) => (
+                        <div key={i} className="receipt-row">
+                            <span>{p.productName}</span>
+                            <span>{p.quantity}</span>
+                        </div>
+                    ))}
+
+                    <div className="receipt-total receipt-row">
+                        <span>TOTAL AMOUNT</span>
+                        <span>₹{order.totalAmount.toFixed(2)}</span>
+                    </div>
+
+                    <div style={{textAlign:'center', marginTop:'20px', fontSize:'0.8rem', fontStyle:'italic'}}>
+                        <p>Thank you for your business!</p>
+                        <p>Generated via AgroChain</p>
+                    </div>
+                </div>
+
+                <button className="btn-primary" style={{width:'100%'}} onClick={() => window.print()}>
+                    🖨️ Print Receipt
+                </button>
+            </div>
+        </div>
+    );
+};
+
 const FarmerOrderCard = ({ item, onAssignVehicle, onPlaceBid, onAddReview, onViewReceipt }) => {
     let statusBadge = null;
     let action = null;
@@ -900,18 +975,59 @@ const FarmerOrderCard = ({ item, onAssignVehicle, onPlaceBid, onAddReview, onVie
     );
 };
 
-const RetailerOrderCard = ({ order }) => (
-    <div className="modern-card"> 
-        <div className="card-body">
-            <h4>Order from {order.retailerEmail}</h4> 
-            <p>Status: <strong>{order.orderStatus}</strong></p>
-            <p style={{fontSize:'1.2em', color:'green', fontWeight:'bold'}}>Total: ₹{order.totalAmount.toFixed(2)}</p> 
-            <div style={{fontSize:'0.9em', color:'#666', marginTop:'5px'}}>
-                {order.products.map(p => <div key={p.productId}>{p.productName} x {p.quantity}</div>)}
+const RetailerOrderCard = ({ order, onViewReceipt }) => {
+    // Helper for status badge color
+    const getStatusClass = (status) => {
+        const s = status?.toLowerCase() || '';
+        if (s.includes('delivered') || s.includes('completed')) return 'success';
+        if (s.includes('cancel')) return 'error';
+        if (s.includes('pending')) return 'warning';
+        return 'info';
+    };
+
+    const orderDate = new Date(order.createdAt || Date.now()).toLocaleDateString();
+
+    return (
+        <div className="order-card-pro">
+            <div className="order-header">
+                <div className="order-id-label">
+                    <span>Retailer:</span>
+                    <span style={{textTransform: 'lowercase'}}>{order.retailerEmail.split('@')[0]}...</span>
+                </div>
+                <span className={`status-badge ${getStatusClass(order.orderStatus)}`}>
+                    {order.orderStatus}
+                </span>
             </div>
-        </div> 
-    </div>
-);
+
+            <div className="order-content" style={{flexDirection:'column', gap:'10px'}}>
+                <div style={{width:'100%'}}>
+                    <h4 className="product-title" style={{fontSize:'1rem'}}>Order #{order._id.slice(-6).toUpperCase()}</h4>
+                    
+                    <div className="order-items-list">
+                        {order.products.map((p, idx) => (
+                            <div key={idx} className="order-item-row">
+                                <span>{p.productName}</span>
+                                <span>x {p.quantity}</span>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="order-total-display">
+                        <span className="total-label">Total Amount</span>
+                        <span className="total-value">₹{order.totalAmount.toFixed(2)}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div className="order-footer">
+                <div className="order-date">{orderDate}</div>
+                <button className="btn-action primary" onClick={() => onViewReceipt('retailerReceipt', order)}>
+                    📄 View Receipt
+                </button>
+            </div>
+        </div>
+    );
+};
 
 // --- MODALS ---
 
