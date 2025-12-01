@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import api from '../services/api';
+import api from '../services/api'; // Ensure this points to your configured axios instance
 import { useNavigate } from 'react-router-dom';
 import '../assets/css/dealer.css';
 
@@ -133,7 +133,15 @@ const DealerDashboard = () => {
     // Filters & Modals
     const [filters, setFilters] = useState({ filterProductType: '', filterVariety: '', filterPrice: '' });
     const [productQuantities, setProductQuantities] = useState({});
-    const [modal, setModal] = useState({ farmer: false, assignVehicle: false, review: false, bid: false, receipt: false, viewReviews: false });
+    const [modal, setModal] = useState({ 
+        farmer: false, 
+        assignVehicle: false, 
+        review: false, 
+        bid: false, 
+        receipt: false, 
+        viewReviews: false,
+        editProfile: false // New modal state
+    });
     const [selectedData, setSelectedData] = useState(null);
     
     // Forms
@@ -347,6 +355,20 @@ const DealerDashboard = () => {
         } catch (err) { alert("Error placing bid"); }
     };
 
+    // Handler for profile update
+    const handleProfileUpdate = async (updatedData) => {
+        try {
+            // Using a PUT request to update the profile by email
+            const res = await api.put(`/dealer/profile/${user.email}`, updatedData);
+            setProfile(res.data); // Update local profile state
+            closeModal('editProfile');
+            alert("Profile updated successfully!");
+        } catch (err) {
+            console.error("Profile update error:", err);
+            alert(err.response?.data?.msg || err.message || "Error updating profile. Check network and backend endpoint.");
+        }
+    };
+
     // Inventory Handlers
     const handleInventoryPriceChange = async (item) => {
         const price = prompt("New Price:", item.unitPrice);
@@ -538,7 +560,10 @@ const DealerDashboard = () => {
                                 </div>
                                 <div className="profile-main-info">
                                     <h1>{profile.businessName || `${profile.firstName} ${profile.lastName}`}</h1>
-                                    <span className="role-badge">Authorized Dealer</span>
+                                  
+                                    <button className="btn-edit-profile" onClick={() => openModal('editProfile', profile)}>
+                                        ✏️ Edit Profile
+                                    </button>
                                 </div>
                             </div>
                             
@@ -562,7 +587,7 @@ const DealerDashboard = () => {
                 </main>
             </div>
             
-            {/* --- RESTORED MODALS --- */}
+            {/* --- MODALS --- */}
             
             <FarmerModal show={modal.farmer} onClose={() => closeModal('farmer')} farmerEmail={selectedData?.farmerEmail} />
             
@@ -597,11 +622,18 @@ const DealerDashboard = () => {
                 user={profile} 
             />
 
-            {/* FIXED VIEW REVIEWS MODAL */}
             <ViewReviewsModal 
                 show={modal.viewReviews} 
                 onClose={() => closeModal('viewReviews')} 
                 product={selectedData} 
+            />
+
+            {/* NEW PROFILE EDIT MODAL */}
+            <EditProfileModal
+                show={modal.editProfile}
+                onClose={() => closeModal('editProfile')}
+                profileData={profile}
+                onSave={handleProfileUpdate}
             />
         </>
     );
@@ -858,7 +890,6 @@ const ReceiptModal = ({ show, onClose, order, user }) => {
     );
 };
 
-// --- FIX: UPDATED VIEW REVIEWS MODAL ---
 const ViewReviewsModal = ({ show, onClose, product }) => {
     if (!show || !product) return null;
 
@@ -893,5 +924,157 @@ const ViewReviewsModal = ({ show, onClose, product }) => {
         </div>
     );
 };
+
+// --- UPDATED PROFILE EDIT MODAL COMPONENT WITH VALIDATION ---
+const EditProfileModal = ({ show, onClose, profileData, onSave }) => {
+    const [formData, setFormData] = useState({});
+    const [validationErrors, setValidationErrors] = useState({}); // State for validation errors
+
+    // Simple inline style for error messages
+    const errorStyle = {
+        color: '#ef4444', // Tailwind red-500 equivalent
+        fontSize: '0.8rem',
+        marginTop: '5px',
+    };
+
+    useEffect(() => {
+        // Initialize form data with current profile data when the modal is shown
+        if (show && profileData) {
+            setFormData({
+                firstName: profileData.firstName || '',
+                lastName: profileData.lastName || '',
+                businessName: profileData.businessName || '',
+                mobile: profileData.mobile || '',
+                gstin: profileData.gstin || '',
+                warehouseAddress: profileData.warehouseAddress || '',
+                // Convert array to comma-separated string for the form input
+                preferredCommodities: profileData.preferredCommodities?.join(', ') || '',
+            });
+            setValidationErrors({}); // Clear errors when modal opens
+        }
+    }, [show, profileData]);
+
+    if (!show) return null;
+
+    const handleChange = (e) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+        // Clear error for the field being edited
+        if (validationErrors[e.target.name]) {
+            setValidationErrors({ ...validationErrors, [e.target.name]: null });
+        }
+    };
+
+    // New Validation Function
+    const validateForm = () => {
+        const errors = {};
+        let isValid = true;
+        const { firstName, lastName, mobile, gstin } = formData;
+        
+        // 1. Name Validation (must be a non-empty string of letters/spaces)
+        if (!firstName || firstName.trim().length === 0 || !/^[A-Za-z\s]+$/.test(firstName.trim())) {
+            errors.firstName = "First Name is required and must contain only letters.";
+            isValid = false;
+        }
+        if (!lastName || lastName.trim().length === 0 || !/^[A-Za-z\s]+$/.test(lastName.trim())) {
+            errors.lastName = "Last Name is required and must contain only letters.";
+            isValid = false;
+        }
+
+        // 2. Mobile Validation (10 digits)
+        if (mobile && mobile.length > 0 && !/^\d{10}$/.test(mobile)) {
+            errors.mobile = "Mobile number must be exactly 10 digits.";
+            isValid = false;
+        } else if (!mobile) {
+            errors.mobile = "Mobile number is required.";
+            isValid = false;
+        }
+
+        // 3. GSTIN Validation (12 alphanumeric characters, case-insensitive check)
+        if (gstin && gstin.length > 0 && !/^[a-zA-Z0-9]{12}$/.test(gstin)) {
+            errors.gstin = "GSTIN must be exactly 12 alphanumeric characters (if provided).";
+            isValid = false;
+        }
+
+        setValidationErrors(errors);
+        return isValid;
+    };
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        
+        if (!validateForm()) { // Run validation before saving
+            alert("Please fix the highlighted errors before saving.");
+            return; // Stop submission
+        }
+        
+        // Validation passed, proceed with data preparation and saving
+        const updatedData = {
+            ...formData,
+            preferredCommodities: formData.preferredCommodities ? formData.preferredCommodities.split(',').map(s => s.trim()) : [],
+        };
+        onSave(updatedData);
+    };
+
+    return (
+        <div className="modal" style={{display:'block', zIndex: 4000}} onClick={onClose}>
+            <div className="modal-content" onClick={e => e.stopPropagation()} style={{maxWidth: '600px'}}>
+                <span className="close" onClick={onClose}>&times;</span>
+                <h3>✏️ Edit Profile</h3>
+                <form className="profile-edit-form" onSubmit={handleSubmit}>
+                    
+                    <div className="form-section">
+                        <h3>Personal Details</h3>
+                        <div className="form-grid">
+                            <div className="form-group">
+                                <label htmlFor="firstName">First Name *</label>
+                                <input type="text" id="firstName" name="firstName" value={formData.firstName || ''} onChange={handleChange} required />
+                                {validationErrors.firstName && <p style={errorStyle}>{validationErrors.firstName}</p>}
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="lastName">Last Name *</label>
+                                <input type="text" id="lastName" name="lastName" value={formData.lastName || ''} onChange={handleChange} required />
+                                {validationErrors.lastName && <p style={errorStyle}>{validationErrors.lastName}</p>}
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="mobile">Mobile *</label>
+                                <input type="text" id="mobile" name="mobile" value={formData.mobile || ''} onChange={handleChange} required maxLength="10" />
+                                {validationErrors.mobile && <p style={errorStyle}>{validationErrors.mobile}</p>}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="form-section">
+                        <h3>Business Information</h3>
+                        <div className="form-grid">
+                            <div className="form-group full-width">
+                                <label htmlFor="businessName">Business Name</label>
+                                <input type="text" id="businessName" name="businessName" value={formData.businessName || ''} onChange={handleChange} />
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="gstin">GSTIN</label>
+                                <input type="text" id="gstin" name="gstin" value={formData.gstin || ''} onChange={handleChange} maxLength="12" />
+                                {validationErrors.gstin && <p style={errorStyle}>{validationErrors.gstin}</p>}
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="preferredCommodities">Commodities (Comma Separated)</label>
+                                <input type="text" id="preferredCommodities" name="preferredCommodities" value={formData.preferredCommodities || ''} onChange={handleChange} placeholder="e.g. Rice, Wheat, Mango" />
+                            </div>
+                            <div className="form-group full-width">
+                                <label htmlFor="warehouseAddress">Warehouse Address</label>
+                                <textarea id="warehouseAddress" name="warehouseAddress" value={formData.warehouseAddress || ''} onChange={handleChange} rows="3"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="form-actions">
+                        <button type="button" className="btn-cancel" onClick={onClose}>Cancel</button>
+                        <button type="submit" className="btn-save">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+};
+
 
 export default DealerDashboard;
