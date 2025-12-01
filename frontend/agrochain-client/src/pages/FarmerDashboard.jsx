@@ -289,7 +289,6 @@ const FarmerDashboard = () => {
         {activeSection === 'inventory' && (
           <section id="inventorySection">
             <div className="section-header">
-              <h2>🌾 My Inventory</h2>
               <button className="add-btn" onClick={() => setShowCropForm(!showCropForm)}>
                 {showCropForm ? '✖ Cancel' : '+ Add New Product'}
               </button>
