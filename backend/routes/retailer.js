@@ -6,18 +6,19 @@ const {
   getOrders, 
   updateOrder, 
   completePayment,
-  submitReview 
+  submitReview,
+  updateRetailerProfile // <--- 1. IMPORT THE NEW FUNCTION HERE
 } = require("../controllers/retailercontroller");
 
+// ... [Your existing routes] ...
 router.get("/dealer-inventory", getDealerInventories);
 router.post("/place-order", placeOrder);
 router.get("/orders/:email", getOrders);
 router.put("/orders/:orderId", updateOrder);
-
-// Route for finalizing payment and updating inventory
 router.post("/orders/:orderId/complete-payment", completePayment);
-
-// Route for submitting reviews
 router.post("/submit-review", submitReview);
+
+// --- 2. ADD THIS NEW ROUTE HERE ---
+router.put("/profile/:email", updateRetailerProfile);
 
 module.exports = router;
