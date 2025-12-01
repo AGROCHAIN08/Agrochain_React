@@ -551,37 +551,53 @@ const FarmerReceiptModal = ({ show, onClose, order, user }) => {
         <span className="close" onClick={onClose}>&times;</span>
         
         <div id="farmerReceiptContent">
-          <div style={{textAlign: 'center', borderBottom: '2px solid #1f2937', paddingBottom: '20px', marginBottom: '20px'}}>
-            <h2 style={{color: '#4caf50', margin: 0}}>AgroChain Sale Receipt</h2>
+          {/* Removed inline styles from the container and h2, relying on CSS for #farmerReceiptContent h2 */}
+          <div style={{textAlign: 'center', marginBottom: '20px'}}>
+            <h2>AgroChain Sale Receipt</h2>
             <p style={{fontSize: '1.2em', margin: '10px 0'}}>Receipt No: <strong>{order.receiptNumber}</strong></p>
           </div>
           
           <div style={{border: '1px solid #e0e0e0', borderRadius: '8px', padding: '20px', marginBottom: '20px', background: '#f9f9f9'}}>
             <h3 style={{marginTop: 0, borderBottom: '1px solid #ccc', paddingBottom: '10px', marginBottom: '15px'}}>Transaction Summary</h3>
-            <table style={{width: '100%', borderCollapse: 'collapse'}}>
-              <tbody>
-                <tr><td style={{padding: '8px 0'}}><strong>Product:</strong></td><td style={{textAlign: 'right'}}>{order.productDetails?.varietySpecies || 'N/A'}</td></tr>
-                <tr><td style={{padding: '8px 0'}}><strong>Quantity Sold:</strong></td><td style={{textAlign: 'right'}}>{order.quantity} {order.productDetails?.unitOfSale}</td></tr>
-                <tr><td style={{padding: '8px 0'}}><strong>Price per Unit:</strong></td><td style={{textAlign: 'right'}}>₹{order.bidPrice || order.originalPrice}</td></tr>
-                <tr><td style={{padding: '8px 0', borderTop: '1px solid #ccc', paddingTop: '15px'}}><strong>TOTAL AMOUNT:</strong></td><td style={{textAlign: 'right', borderTop: '1px solid #ccc', paddingTop: '15px', fontSize: '1.1em', fontWeight: 'bold'}}>₹{order.totalAmount?.toFixed(2)}</td></tr>
-              </tbody>
-            </table>
+            
+            {/* START: Replaced Table with Divs using #receiptDetails ID and .total-line class */}
+            <div id="receiptDetails">
+              <div>
+                <span><strong>Product:</strong></span>
+                <span>{order.productDetails?.varietySpecies || 'N/A'}</span>
+              </div>
+              <div>
+                <span><strong>Quantity Sold:</strong></span>
+                <span>{order.quantity} {order.productDetails?.unitOfSale}</span>
+              </div>
+              <div>
+                <span><strong>Price per Unit:</strong></span>
+                <span>₹{order.bidPrice || order.originalPrice}</span>
+              </div>
+              <div className="total-line">
+                <span><strong>TOTAL AMOUNT:</strong></span>
+                <span>₹{order.totalAmount?.toFixed(2)}</span>
+              </div>
+            </div>
+            {/* END: Replaced Table with Divs */}
+
+            {/* Dealer and Farmer details (kept inside Transaction Summary, cleaned up some inline borders) */}
+            <div style={{display: 'flex', justifyContent: 'space-between', gap: '20px', flexWrap: 'wrap', borderTop: '1px solid #e0e0e0', paddingTop: '15px', marginTop: '20px'}}>
+              <div style={{flex: 1, minWidth: '250px', padding: '10px', background: '#fff', borderRadius: '6px'}}>
+                <h4 style={{marginTop: 0, borderBottom: '1px solid #ccc', paddingBottom: '5px', marginBottom: '10px', color: '#3b82f6'}}>Sold To (Dealer)</h4>
+                <p><strong>Name:</strong> {order.dealerDetails?.businessName || `${order.dealerDetails?.firstName} ${order.dealerDetails?.lastName}`}</p>
+                <p><strong>Email:</strong> {order.dealerDetails?.email}</p>
+                <p><strong>Mobile:</strong> {order.dealerDetails?.mobile}</p>
+              </div>
+              <div style={{flex: 1, minWidth: '250px', padding: '10px', background: '#fff', borderRadius: '6px'}}>
+                <h4 style={{marginTop: 0, borderBottom: '1px solid #ccc', paddingBottom: '5px', marginBottom: '10px', color: '#3b82f6'}}>Seller (Farmer)</h4>
+                <p><strong>Name:</strong> {user?.firstName} {user?.lastName}</p>
+                <p><strong>Email:</strong> {user?.email}</p>
+                <p><strong>Mobile:</strong> {user?.mobile}</p>
+              </div>
+            </div>
           </div>
 
-          <div style={{display: 'flex', justifyContent: 'space-between', gap: '20px', flexWrap: 'wrap'}}>
-            <div style={{flex: 1, minWidth: '250px', border: '1px solid #e0e0e0', borderRadius: '8px', padding: '15px', background: '#fff'}}>
-              <h4 style={{marginTop: 0, borderBottom: '1px solid #ccc', paddingBottom: '5px', marginBottom: '10px', color: '#3b82f6'}}>Sold To (Dealer)</h4>
-              <p><strong>Name:</strong> {order.dealerDetails?.businessName || `${order.dealerDetails?.firstName} ${order.dealerDetails?.lastName}`}</p>
-              <p><strong>Email:</strong> {order.dealerDetails?.email}</p>
-              <p><strong>Mobile:</strong> {order.dealerDetails?.mobile}</p>
-            </div>
-            <div style={{flex: 1, minWidth: '250px', border: '1px solid #e0e0e0', borderRadius: '8px', padding: '15px', background: '#fff'}}>
-              <h4 style={{marginTop: 0, borderBottom: '1px solid #ccc', paddingBottom: '5px', marginBottom: '10px', color: '#3b82f6'}}>Seller (Farmer)</h4>
-              <p><strong>Name:</strong> {user?.firstName} {user?.lastName}</p>
-              <p><strong>Email:</strong> {user?.email}</p>
-              <p><strong>Mobile:</strong> {user?.mobile}</p>
-            </div>
-          </div>
           
           <div style={{textAlign: 'center', marginTop: '30px', fontSize: '0.9em', color: '#6b7280', paddingTop: '15px', borderTop: '1px solid #e0e0e0'}}>
             <p>This transaction was securely recorded on {order.assignedDate ? new Date(order.assignedDate).toLocaleDateString() : new Date().toLocaleDateString()}.</p>
@@ -589,7 +605,8 @@ const FarmerReceiptModal = ({ show, onClose, order, user }) => {
         </div>
         
         <div style={{textAlign: 'center', marginTop: '20px'}}>
-          <button className="btn-primary" onClick={handlePrint} style={{padding: '10px 20px'}}>
+          {/* Removed inline style, relying on CSS for .btn-primary */}
+          <button className="btn-primary" onClick={handlePrint}>
             🖨️ Print Receipt
           </button>
         </div>
