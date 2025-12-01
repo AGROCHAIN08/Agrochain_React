@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '../hooks/useAuth';
-import api from '../services/api';
+import { useAuth } from '../hooks/useAuth.jsx';
+import api from '../services/api.jsx';
 import { useNavigate } from 'react-router-dom';
 import '../assets/css/dealer.css';
 
@@ -115,7 +115,6 @@ const DealerDashboard = () => {
     
     // Navigation & State
     const [activeSection, setActiveSection] = useState('browse');
-    const [showSidebar, setShowSidebar] = useState(true);
     
     // Data State
     const [allProducts, setAllProducts] = useState([]);
@@ -208,7 +207,6 @@ const DealerDashboard = () => {
     // --- Actions ---
     const handleNavigate = (section) => {
         setActiveSection(section);
-        setShowSidebar(section === 'browse');
         window.scrollTo(0, 0);
     };
 
@@ -386,31 +384,33 @@ const DealerDashboard = () => {
                 activeSection={activeSection}
             />
             
-            <div className={`main-container ${showSidebar ? 'sidebar-active' : ''}`}>
-                {/* Sidebar Filter (Only on Browse) */}
-                <aside className={`sidebar-filters ${showSidebar ? 'show' : ''}`} style={{display: activeSection === 'browse' ? 'block' : 'none'}}>
-                    <h3>🔍 Filter Products</h3>
-                    <div className="filter-group">
-                        <label>Type</label>
-                        <select id="filterProductType" value={filters.filterProductType} onChange={handleFilterChange}>
-                            <option value="">All Types</option>
-                            <option value="Fruit">Fruit</option>
-                            <option value="Vegetable">Vegetable</option>
-                            <option value="Cereal">Cereal</option>
-                            <option value="Spices">Spices</option>
-                        </select>
-                    </div>
-                    <div className="filter-group">
-                        <label>Variety</label>
-                        <input type="text" id="filterVariety" value={filters.filterVariety} onChange={handleFilterChange} placeholder="e.g. Mango" />
-                    </div>
-                    <div className="filter-group">
-                        <label>Max Price</label>
-                        <input type="number" id="filterPrice" value={filters.filterPrice} onChange={handleFilterChange} placeholder="₹" />
-                    </div>
-                </aside>
+            <div className="main-container">
+                {/* Sidebar Filter (Only visible on Browse) */}
+                {activeSection === 'browse' && (
+                    <aside className="sidebar-filters">
+                        <h3>🔍 Filter Products</h3>
+                        <div className="filter-group">
+                            <label>Type</label>
+                            <select id="filterProductType" value={filters.filterProductType} onChange={handleFilterChange}>
+                                <option value="">All Types</option>
+                                <option value="Fruit">Fruit</option>
+                                <option value="Vegetable">Vegetable</option>
+                                <option value="Cereal">Cereal</option>
+                                <option value="Spices">Spices</option>
+                            </select>
+                        </div>
+                        <div className="filter-group">
+                            <label>Variety</label>
+                            <input type="text" id="filterVariety" value={filters.filterVariety} onChange={handleFilterChange} placeholder="e.g. Mango" />
+                        </div>
+                        <div className="filter-group">
+                            <label>Max Price</label>
+                            <input type="number" id="filterPrice" value={filters.filterPrice} onChange={handleFilterChange} placeholder="₹" />
+                        </div>
+                    </aside>
+                )}
 
-                <main className="content-area" style={{marginLeft: activeSection === 'browse' ? undefined : '0'}}>
+                <main className="content-area">
                     {/* BROWSE SECTION */}
                     <section className={activeSection === 'browse' ? 'active-section' : 'hidden-section'}>
                         <div className="section-header">
@@ -488,11 +488,23 @@ const DealerDashboard = () => {
                              <form onSubmit={handleAddVehicle} className="vehicle-add-form">
                                 <div className="form-group">
                                     <label>Vehicle Registration No.</label>
-                                    <input type="text" id="vehicleId" placeholder="e.g. MH-12-AB-1234" value={vehicleFormData.vehicleId} onChange={handleVehicleFormChange} required />
+                                    <input 
+                                        type="text" 
+                                        id="vehicleId" 
+                                        placeholder="e.g. MH-12-AB-1234" 
+                                        value={vehicleFormData.vehicleId} 
+                                        onChange={handleVehicleFormChange} 
+                                        required 
+                                    />
                                 </div>
                                 <div className="form-group">
                                     <label>Vehicle Type</label>
-                                    <select id="vehicleType" value={vehicleFormData.vehicleType} onChange={handleVehicleFormChange} required>
+                                    <select 
+                                        id="vehicleType" 
+                                        value={vehicleFormData.vehicleType} 
+                                        onChange={handleVehicleFormChange} 
+                                        required
+                                    >
                                         <option value="">Select Type...</option>
                                         <option value="Reefer Truck (5 MT)">Reefer Truck (5 MT)</option>
                                         <option value="Heavy Truck (10 MT)">Heavy Truck (10 MT)</option>
@@ -502,9 +514,18 @@ const DealerDashboard = () => {
                                 </div>
                                 <div className="form-group">
                                     <label>Temperature Capacity</label>
-                                    <input type="text" id="temperatureCapacity" placeholder="e.g. -18°C to 4°C" value={vehicleFormData.temperatureCapacity} onChange={handleVehicleFormChange} required />
+                                    <input 
+                                        type="text" 
+                                        id="temperatureCapacity" 
+                                        placeholder="e.g. -18°C to 4°C" 
+                                        value={vehicleFormData.temperatureCapacity} 
+                                        onChange={handleVehicleFormChange} 
+                                        required 
+                                    />
                                 </div>
-                                <button type="submit" className="btn-add-vehicle">Add to Fleet</button>
+                                <button type="submit" className="btn-add-vehicle">
+                                    Add to Fleet
+                                </button>
                              </form>
                         </div>
 
@@ -597,7 +618,6 @@ const DealerDashboard = () => {
                 user={profile} 
             />
 
-            {/* FIXED VIEW REVIEWS MODAL */}
             <ViewReviewsModal 
                 show={modal.viewReviews} 
                 onClose={() => closeModal('viewReviews')} 
@@ -636,7 +656,6 @@ const ProductCard = ({ product, onAddToCart, qty, onQtyChange, onViewFarmer, onV
     </div>
 );
 
-// Enhanced Vehicle Card
 const VehicleCard = ({ vehicle, onDelete, onFree }) => {
     const isTruck = vehicle.vehicleType.toLowerCase().includes('truck');
     const statusClass = vehicle.currentStatus.toLowerCase();
@@ -742,7 +761,7 @@ const RetailerOrderCard = ({ order }) => (
     </div>
 );
 
-// --- MODAL COMPONENT DEFINITIONS ---
+// --- MODALS ---
 
 const FarmerModal = ({ show, onClose, farmerEmail }) => {
     const [farmer, setFarmer] = useState(null);
@@ -858,11 +877,8 @@ const ReceiptModal = ({ show, onClose, order, user }) => {
     );
 };
 
-// --- FIX: UPDATED VIEW REVIEWS MODAL ---
 const ViewReviewsModal = ({ show, onClose, product }) => {
     if (!show || !product) return null;
-
-    // Correctly get reviews from the passed product/item directly
     const reviews = product.retailerReviews || product.reviews || [];
 
     return (
