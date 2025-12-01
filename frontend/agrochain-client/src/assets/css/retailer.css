@@ -106,10 +106,6 @@ body {
   white-space: nowrap;
 }
 
-.profile-btn:hover {
-  background-color: #e8f5e9;
-  border-color: #4caf50;
-}
 
 .profile-icon {
   font-size: 1.3em;
