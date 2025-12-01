@@ -2,14 +2,13 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import api from '../services/api';
 import { useNavigate } from 'react-router-dom';
-import '../assets/css/retailer.css'; // Your existing CSS file
+import '../assets/css/retailer.css';
 
-// --- RetailerNavbar Component (from retailer.html) ---
+// --- RetailerNavbar Component ---
 const RetailerNavbar = ({ user, cartCount, onSignout, onNavigate, activeSection }) => {
     const [dropdownOpen, setDropdownOpen] = useState(false);
 
     useEffect(() => {
-        // Close profile dropdown when clicking outside
         const handleClickOutside = (event) => {
             if (dropdownOpen && !event.target.closest('.profile-dropdown')) {
                 setDropdownOpen(false);
@@ -21,7 +20,7 @@ const RetailerNavbar = ({ user, cartCount, onSignout, onNavigate, activeSection 
 
     const handleNav = (section) => {
         onNavigate(section);
-        setDropdownOpen(false); // Close dropdown on nav
+        setDropdownOpen(false);
     };
 
     return (
@@ -94,10 +93,11 @@ const RetailerDashboard = () => {
         payment: false,
         receipt: false,
         review: false,
-        viewReviews: false
+        viewReviews: false,
+        editProfile: false // <--- Added editProfile state
     });
-    const [selectedOrder, setSelectedOrder] = useState(null); // For payment, review, receipt
-    const [selectedProduct, setSelectedProduct] = useState(null); // For viewing reviews
+    const [selectedOrder, setSelectedOrder] = useState(null); 
+    const [selectedProduct, setSelectedProduct] = useState(null); 
     const [paymentStep, setPaymentStep] = useState(1);
     const [paymentMethod, setPaymentMethod] = useState('UPI');
 
@@ -125,7 +125,6 @@ const RetailerDashboard = () => {
         loadAllData();
     }, [user, loadAllData]);
 
-    // Save cart to localStorage when it changes
     useEffect(() => {
         localStorage.setItem("retailerCart", JSON.stringify(cart));
     }, [cart]);
@@ -141,6 +140,7 @@ const RetailerDashboard = () => {
 
     const handleNavigate = (section) => {
         setActiveSection(section);
+        window.scrollTo(0, 0);
     };
 
     const handleFilterChange = (e) => {
@@ -164,11 +164,9 @@ const RetailerDashboard = () => {
         if (!item) return;
 
         let qty = parseFloat(value);
-        if (isNaN(qty)) {
-            qty = '';
-        } else if (qty < 0) {
-            qty = 0;
-        } else if (qty > item.quantity) {
+        if (isNaN(qty)) qty = '';
+        else if (qty < 0) qty = 0;
+        else if (qty > item.quantity) {
             qty = item.quantity;
             alert(`Only ${item.quantity} available.`);
         }
@@ -217,9 +215,25 @@ const RetailerDashboard = () => {
             alert('✅ Order placed successfully! Please go to "My Orders" to pay.');
             setCart([]);
             setActiveSection('orders');
-            loadAllData(); // Refresh orders
+            loadAllData();
         } catch (err) {
             alert(`❌ Error: ${err.response?.data?.msg || 'Checkout failed'}`);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // --- Profile Update Logic ---
+    const handleProfileUpdate = async (updatedData) => {
+        setLoading(true);
+        try {
+            const res = await api.put(`/retailer/profile/${user.email}`, updatedData);
+            setProfile(res.data);
+            setModal(prev => ({ ...prev, editProfile: false }));
+            alert("✅ Profile updated successfully!");
+        } catch (err) {
+            console.error(err);
+            alert(`❌ Error: ${err.response?.data?.msg || 'Profile update failed'}`);
         } finally {
             setLoading(false);
         }
@@ -228,22 +242,14 @@ const RetailerDashboard = () => {
     // --- Modal Logic ---
     const openModal = (modalName, data) => {
         if (modalName === 'payment') {
-            setSelectedOrder(JSON.parse(JSON.stringify(data))); // Deep copy for editing
+            setSelectedOrder(JSON.parse(JSON.stringify(data)));
             setPaymentStep(1);
-            setModal(prev => ({ ...prev, payment: true }));
-        }
-        if (modalName === 'receipt') {
+        } else if (modalName === 'receipt' || modalName === 'review') {
             setSelectedOrder(data);
-            setModal(prev => ({ ...prev, receipt: true }));
-        }
-        if (modalName === 'review') {
-            setSelectedOrder(data);
-            setModal(prev => ({ ...prev, review: true }));
-        }
-        if (modalName === 'viewReviews') {
+        } else if (modalName === 'viewReviews') {
             setSelectedProduct(data);
-            setModal(prev => ({ ...prev, viewReviews: true }));
         }
+        setModal(prev => ({ ...prev, [modalName]: true }));
     };
 
     const closeModal = (modalName) => {
@@ -252,7 +258,7 @@ const RetailerDashboard = () => {
         setSelectedProduct(null);
     };
 
-    // --- Payment Modal Logic ---
+    // Payment & Review Handlers...
     const handlePaymentQtyChange = (productId, newQuantity) => {
         const qty = parseInt(newQuantity);
         if (isNaN(qty) || qty < 1) {
@@ -260,12 +266,11 @@ const RetailerDashboard = () => {
             return;
         }
         
-        // Find the original item in inventory to check max quantity
         const inventoryItem = allInventory.find(item => item._id === productId);
-        const maxQty = inventoryItem ? inventoryItem.quantity : product.quantity; // Fallback to order's original qty
+        const maxQty = inventoryItem ? inventoryItem.quantity : 100; // Fallback
 
         if(qty > maxQty) {
-            alert(`Only ${maxQty} units are available from the dealer.`);
+            alert(`Only ${maxQty} units available.`);
             return;
         }
 
@@ -286,9 +291,9 @@ const RetailerDashboard = () => {
                 totalAmount: selectedOrder.totalAmount,
                 paymentMethod: paymentMethod
             });
-            alert('✅ Payment successful! Dealer inventory has been updated.');
+            alert('✅ Payment successful!');
             closeModal('payment');
-            loadAllData(); // Refresh orders and inventory
+            loadAllData();
         } catch (err) {
             alert(`❌ Error: ${err.response?.data?.msg || 'Payment failed'}`);
         } finally {
@@ -296,7 +301,6 @@ const RetailerDashboard = () => {
         }
     };
 
-    // --- Review Modal Logic ---
     const handleSubmitReview = async (reviewData) => {
         setLoading(true);
         try {
@@ -307,7 +311,7 @@ const RetailerDashboard = () => {
             });
             alert('✅ Review submitted successfully!');
             closeModal('review');
-            loadAllData(); // Refresh orders and inventory
+            loadAllData();
         } catch (err) {
             alert(`❌ Error: ${err.response?.data?.msg || 'Review submission failed'}`);
         } finally {
@@ -330,7 +334,7 @@ const RetailerDashboard = () => {
     return (
         <>
             <RetailerNavbar 
-                user={user} 
+                user={profile} 
                 cartCount={cartCount}
                 onSignout={handleSignout} 
                 onNavigate={handleNavigate} 
@@ -349,7 +353,7 @@ const RetailerDashboard = () => {
                                 <h1 className="section-title">Browse Dealer Products</h1>
                             </div>
                             <div id="inventoryGrid" className="inventory-grid">
-                                {loading ? <p>Loading...</p> : filteredInventory.length === 0 ? <div className="empty-state"><h3>No Products Found</h3></div> :
+                                {loading && activeSection === 'browse' ? <p>Loading...</p> : filteredInventory.length === 0 ? <div className="empty-state"><h3>No Products Found</h3></div> :
                                     filteredInventory.map(item => (
                                         <InventoryCard
                                             key={item._id}
@@ -383,7 +387,7 @@ const RetailerDashboard = () => {
                 <section id="ordersSection" className={activeSection === 'orders' ? 'section active' : 'section'}>
                     <div className="section-header"><h1 className="section-title">My Orders</h1></div>
                     <div id="ordersGrid" className="inventory-grid">
-                        {loading ? <p>Loading orders...</p> : orders.length === 0 ? <div className="empty-state"><h3>You have no orders.</h3></div> :
+                        {orders.length === 0 ? <div className="empty-state"><h3>You have no orders.</h3></div> :
                             orders.map(order => (
                                 <OrderCard 
                                     key={order._id} 
@@ -397,15 +401,38 @@ const RetailerDashboard = () => {
                     </div>
                 </section>
 
-                {/* --- Profile Section --- */}
+                {/* --- NEW PROFESSIONAL PROFILE SECTION --- */}
                 <section id="profileSection" className={activeSection === 'profile' ? 'section active' : 'section'}>
-                    <div className="section-header"><h1 className="section-title">My Profile</h1></div>
-                    <div id="profileInfo" style={{ background: 'white', padding: '20px', borderRadius: '8px', maxWidth: '600px' }}>
-                        <p><strong>Name:</strong> {profile.firstName} {profile.lastName || ''}</p>
-                        <p><strong>Email:</strong> {profile.email}</p>
-                        <p><strong>Mobile:</strong> {profile.mobile}</p>
-                        <p><strong>Shop Name:</strong> {profile.shopName || 'N/A'}</p>
-                        <p><strong>Shop Address:</strong> {profile.shopAddress || 'N/A'}</p>
+                    <div className="profile-container">
+                        <div className="profile-header-card">
+                            <div className="profile-cover"></div>
+                            <div className="profile-avatar-large">
+                                {profile.firstName?.charAt(0)}
+                            </div>
+                            <div className="profile-main-info">
+                                <div>
+                                    <h1>{profile.firstName} {profile.lastName}</h1>
+                                    <span className="role-badge">Retailer</span>
+                                </div>
+                                <button className="btn-edit-profile" onClick={() => openModal('editProfile')}>
+                                    ✏️ Edit Profile
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div className="profile-details-grid">
+                            <div className="detail-group">
+                                <h3>🏪 Shop Information</h3>
+                                <div className="detail-row"><label>Shop Name</label><span>{profile.shopName || 'N/A'}</span></div>
+                                <div className="detail-row"><label>Shop Address</label><span>{profile.shopAddress || 'N/A'}</span></div>
+                                <div className="detail-row"><label>Shop Type</label><span>{profile.shopType || 'General'}</span></div>
+                            </div>
+                            <div className="detail-group">
+                                <h3>📞 Contact Details</h3>
+                                <div className="detail-row"><label>Email</label><span>{profile.email}</span></div>
+                                <div className="detail-row"><label>Mobile</label><span>{profile.mobile}</span></div>
+                            </div>
+                        </div>
                     </div>
                 </section>
             </div>
@@ -442,11 +469,113 @@ const RetailerDashboard = () => {
                 product={selectedProduct}
                 allInventory={allInventory}
             />
+
+            {/* --- New Edit Profile Modal --- */}
+            <EditProfileModal
+                show={modal.editProfile}
+                onClose={() => closeModal('editProfile')}
+                profileData={profile}
+                onSave={handleProfileUpdate}
+            />
         </>
     );
 };
 
-// --- Child Components (Cards, Modals) ---
+// --- Helper Components ---
+
+// New Edit Profile Modal Component
+// New Edit Profile Modal Component
+const EditProfileModal = ({ show, onClose, profileData, onSave }) => {
+    const [formData, setFormData] = useState({});
+    
+    useEffect(() => {
+        if (show && profileData) { // <--- Fixed (removed "QL")
+            setFormData({
+                firstName: profileData.firstName || '',
+                lastName: profileData.lastName || '',
+                mobile: profileData.mobile || '',
+                shopName: profileData.shopName || '',
+                shopAddress: profileData.shopAddress || '',
+                shopType: profileData.shopType || ''
+            });
+        }
+    }, [show, profileData]);
+
+    if (!show) return null;
+
+    const handleChange = (e) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        if (!formData.firstName || !formData.mobile) {
+            alert("First Name and Mobile are required.");
+            return;
+        }
+        onSave(formData);
+    };
+
+    return (
+        <div className="modal" style={{display:'block', zIndex: 4000}} onClick={onClose}>
+            <div className="modal-content" onClick={e => e.stopPropagation()} style={{maxWidth: '600px'}}>
+                <span className="close" onClick={onClose}>&times;</span>
+                <h3 style={{textAlign:'center', color:'#1f2937', marginBottom:'20px'}}>✏️ Edit Profile</h3>
+                <form className="profile-edit-form" onSubmit={handleSubmit}>
+                    
+                    <div className="form-section">
+                        <h4>Personal Details</h4>
+                        <div className="form-grid">
+                            <div className="form-group">
+                                <label htmlFor="firstName">First Name *</label>
+                                <input type="text" id="firstName" name="firstName" value={formData.firstName} onChange={handleChange} required />
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="lastName">Last Name</label>
+                                <input type="text" id="lastName" name="lastName" value={formData.lastName} onChange={handleChange} />
+                            </div>
+                            <div className="form-group full-width">
+                                <label htmlFor="mobile">Mobile *</label>
+                                <input type="text" id="mobile" name="mobile" value={formData.mobile} onChange={handleChange} required />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="form-section">
+                        <h4>Shop Information</h4>
+                        <div className="form-grid">
+                            <div className="form-group full-width">
+                                <label htmlFor="shopName">Shop Name</label>
+                                <input type="text" id="shopName" name="shopName" value={formData.shopName} onChange={handleChange} />
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="shopType">Shop Type</label>
+                                <select id="shopType" name="shopType" value={formData.shopType} onChange={handleChange}>
+                                    <option value="">Select...</option>
+                                    <option value="General">General</option>
+                                    <option value="Grocery">Grocery</option>
+                                    <option value="Supermarket">Supermarket</option>
+                                    <option value="Wholesale">Wholesale</option>
+                                </select>
+                            </div>
+                            <div className="form-group full-width">
+                                <label htmlFor="shopAddress">Shop Address</label>
+                                <textarea id="shopAddress" name="shopAddress" value={formData.shopAddress} onChange={handleChange} rows="3"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="modal-actions">
+                        <button type="button" className="btn-secondary" onClick={onClose}>Cancel</button>
+                        <button type="submit" className="btn-primary">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+};
+
+// ... [Keep existing sub-components: FilterPanel, InventoryCard, CartItem, CartSummary, OrderCard, PaymentModal, ReceiptModal, ReviewModal, ViewReviewsModal] ...
 
 const FilterPanel = ({ filters, onChange }) => (
     <aside className="filter-panel">
@@ -581,8 +710,6 @@ const OrderCard = ({ order, onPay, onReview, onReceipt }) => {
         </div>
     );
 };
-
-// --- Modal Components ---
 
 const PaymentModal = ({ show, onClose, order, step, setStep, onQtyChange, onConfirm, paymentMethod, setPaymentMethod, loading }) => {
     if (!show) return null;

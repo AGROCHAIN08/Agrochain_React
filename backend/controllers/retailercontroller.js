@@ -296,4 +296,27 @@ exports.submitReview = async (req, res) => {
   }
 };
 
+
+// Update Retailer Profile
+exports.updateRetailerProfile = async (req, res) => {
+  try {
+    const { email } = req.params;
+    
+    // Find user by email and update
+    const retailer = await User.findOneAndUpdate(
+      { email: email, role: "retailer" }, // Ensure we only update retailers
+      { $set: req.body }, // Update with the data sent from frontend
+      { new: true } // Return the updated document
+    );
+
+    if (!retailer) {
+      return res.status(404).json({ msg: "Retailer not found" });
+    }
+
+    res.json(retailer);
+  } catch (err) {
+    console.error("Error updating retailer profile:", err);
+    res.status(500).json({ msg: "Server Error during profile update" });
+  }
+};
 module.exports = exports;
