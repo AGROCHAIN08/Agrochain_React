@@ -690,7 +690,7 @@ const ProductCard = ({ product, onAddToCart, qty, onQtyChange, onViewFarmer, onV
                 <button className="btn-text" onClick={() => onViewFarmer('farmer', product)}>View Farmer</button>
                 <div className="action-group">
                     <input type="number" value={qty} onChange={(e) => onQtyChange(product._id, e.target.value)} placeholder="Qty" style={{width:'60px'}} />
-                    <button className="btn-icon" onClick={() => onAddToCart(product)}>🛒</button>
+                    <button className="btn-icon" onClick={() => onAddToCart(product)}>🛒Add to cart</button>
                 </div>
             </div>
         </div>
