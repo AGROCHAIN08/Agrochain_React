@@ -32,12 +32,12 @@ const About = () => {
               <div className="mission-card">
                   <div className="card-icon"><i className="fas fa-bullseye"></i></div>
                   <h2>Our Mission</h2>
-                  <p>To revolutionize agricultural trade by providing a platform that offers transparency...</p>
+                  <p>To revolutionize agricultural trade by providing a platform that offers transparency, diversity, and personalized options for every type of stakeholder, while supporting local farmers and sustainable farming practices.</p>
               </div>
               <div className="vision-card">
                   <div className="card-icon"><i className="fas fa-eye"></i></div>
                   <h2>Our Vision</h2>
-                  <p>We envision a world where agricultural supply chains are seamless...</p>
+                  <p>We envision a world where agricultural supply chains are seamless, where every transaction enhances the journey, and where farmers, suppliers, and consumers form meaningful connections that transcend traditional trade practices.</p>
               </div>
           </div>
       </section>

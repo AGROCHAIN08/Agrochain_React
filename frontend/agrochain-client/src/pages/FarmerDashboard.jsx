@@ -79,6 +79,20 @@ const FarmerDashboard = () => {
   const [activeSection, setActiveSection] = useState('inventory');
   const [crops, setCrops] = useState([]);
   const [orders, setOrders] = useState([]);
+  // Add this to your existing modal state
+  const [modal, setModal] = useState({ 
+    farmer: false, 
+    assignVehicle: false, 
+    review: false, 
+    bid: false, 
+    receipt: false, 
+    viewReviews: false,
+    farmerReceipt: false  // ADD THIS
+  });
+
+  // Add state to track selected order for receipt
+  const [selectedReceiptOrder, setSelectedReceiptOrder] = useState(null);
+
   const [notifications, setNotifications] = useState([]);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -215,16 +229,27 @@ const FarmerDashboard = () => {
     }
   };
 
-  const handleAcceptBid = async (orderId) => {
-    if (!window.confirm('Are you sure you want to accept this bid?')) return;
-    try {
-      await api.post(`/farmer/accept-bid/${user.email}`, { orderId });
-      alert('Bid accepted successfully!');
-      loadAllData(); 
-    } catch (err) {
-      alert(err.response?.data?.msg || 'Error accepting bid');
+ const handleAcceptBid = async (orderId) => {
+  if (!window.confirm('Are you sure you want to accept this bid?')) return;
+  
+  try {
+    const res = await api.post(`/farmer/accept-bid/${user.email}`, { orderId });
+    const data = res.data;
+    
+    if (res.status === 200 || res.status === 201) {
+      alert(`✅ Bid accepted! Receipt Number: ${data.receiptNumber}`);
+      
+      // Reload all data to get updated inventory and orders
+      await loadAllData();
+      
+      // Optional: Show receipt modal immediately
+      // You can add a receipt modal state and show it here if needed
     }
-  };
+  } catch (err) {
+    alert(err.response?.data?.msg || 'Error accepting bid');
+    console.error('Error accepting bid:', err);
+  }
+};
 
   const handleRejectBid = async (orderId) => {
     if (!window.confirm('Are you sure you want to reject this bid?')) return;
@@ -409,20 +434,31 @@ const FarmerDashboard = () => {
                     </div>
                   </div>
                   {order.status === 'Bid Placed' && order.bidStatus === 'Pending' && (
-                    <div style={{ background: '#fef3c7', border: '2px solid #f59e0b', padding: '15px', marginTop: '15px' }}>
-                      <h4 style={{ marginTop: 0, color: '#d97706' }}>💰 New Bid Received</h4>
+                    <div className="bid-panel">
+                      <h4>💰 New Bid Received</h4>
                       <p><strong>Bid Price:</strong> ₹{order.bidPrice} per {order.productDetails.unitOfSale}</p>
                       <p><strong>Total Amount:</strong> ₹{order.totalAmount.toFixed(2)}</p>
-                      <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
-                        <button onClick={() => handleAcceptBid(order._id)} disabled={loading} style={{ flex: 1, background: '#10b981', color: 'white', padding: '10px', border: 'none', borderRadius: '6px' }}>✓ Accept Bid</button>
-                        <button onClick={() => handleRejectBid(order._id)} disabled={loading} style={{ flex: 1, background: '#ef4444', color: 'white', padding: '10px', border: 'none', borderRadius: '6px' }}>✗ Reject Bid</button>
+                      <div className="bid-actions">
+                        <button onClick={() => handleAcceptBid(order._id)} disabled={loading}>✓ Accept Bid</button>
+                        <button onClick={() => handleRejectBid(order._id)} disabled={loading}>✗ Reject Bid</button>
                       </div>
                     </div>
                   )}
-                  {order.status === 'Bid Accepted' && (
-                    <div style={{ background: '#d1fae5', padding: '15px', marginTop: '15px' }}>
-                       <h4 style={{ color: '#059669' }}>✓ Bid Accepted</h4>
-                       <p><strong>Receipt:</strong> {order.receiptNumber}</p>
+                  {order.status === 'Bid Accepted' && order.receiptNumber && (
+                    <div style={{ background: '#d1fae5', border: '2px solid #10b981', borderRadius: '8px', padding: '15px', marginTop: '15px' }}>
+                      <h4 style={{ marginTop: 0, color: '#059669' }}>✓ Bid Accepted</h4>
+                      <p style={{ margin: '5px 0' }}><strong>Final Price:</strong> ₹{order.bidPrice} per {order.productDetails?.unitOfSale}</p>
+                      <p style={{ margin: '5px 0' }}><strong>Total Amount:</strong> ₹{order.totalAmount?.toFixed(2)}</p>
+                      <p style={{ margin: '5px 0' }}><strong>Receipt Number:</strong> {order.receiptNumber}</p>
+                      <button 
+                        onClick={() => {
+                          setSelectedReceiptOrder(order);
+                          setModal({...modal, farmerReceipt: true});
+                        }} 
+                        style={{ background: '#3b82f6', color: 'white', padding: '8px 16px', border: 'none', borderRadius: '6px', cursor: 'pointer', marginTop: '10px' }}
+                      >
+                        📄 View Receipt
+                      </button>
                     </div>
                   )}
                 </div>
@@ -487,7 +523,78 @@ const FarmerDashboard = () => {
           </section>
         )}
       </div>
+      <FarmerReceiptModal 
+            show={modal.farmerReceipt} 
+            onClose={() => {
+                setModal({ ...modal, farmerReceipt: false });
+                setSelectedReceiptOrder(null);
+            }} 
+            order={selectedReceiptOrder} 
+            user={user}
+        />
+
     </>
+  );
+};
+
+// Add this new modal component
+const FarmerReceiptModal = ({ show, onClose, order, user }) => {
+  if (!show || !order) return null;
+  
+  const handlePrint = () => {
+    window.print();
+  };
+
+  return (
+    <div className="modal" style={{display:'block', zIndex: 2000}} onClick={onClose}>
+      <div className="modal-content" style={{maxWidth: '700px'}} onClick={e => e.stopPropagation()}>
+        <span className="close" onClick={onClose}>&times;</span>
+        
+        <div id="farmerReceiptContent">
+          <div style={{textAlign: 'center', borderBottom: '2px solid #1f2937', paddingBottom: '20px', marginBottom: '20px'}}>
+            <h2 style={{color: '#4caf50', margin: 0}}>AgroChain Sale Receipt</h2>
+            <p style={{fontSize: '1.2em', margin: '10px 0'}}>Receipt No: <strong>{order.receiptNumber}</strong></p>
+          </div>
+          
+          <div style={{border: '1px solid #e0e0e0', borderRadius: '8px', padding: '20px', marginBottom: '20px', background: '#f9f9f9'}}>
+            <h3 style={{marginTop: 0, borderBottom: '1px solid #ccc', paddingBottom: '10px', marginBottom: '15px'}}>Transaction Summary</h3>
+            <table style={{width: '100%', borderCollapse: 'collapse'}}>
+              <tbody>
+                <tr><td style={{padding: '8px 0'}}><strong>Product:</strong></td><td style={{textAlign: 'right'}}>{order.productDetails?.varietySpecies || 'N/A'}</td></tr>
+                <tr><td style={{padding: '8px 0'}}><strong>Quantity Sold:</strong></td><td style={{textAlign: 'right'}}>{order.quantity} {order.productDetails?.unitOfSale}</td></tr>
+                <tr><td style={{padding: '8px 0'}}><strong>Price per Unit:</strong></td><td style={{textAlign: 'right'}}>₹{order.bidPrice || order.originalPrice}</td></tr>
+                <tr><td style={{padding: '8px 0', borderTop: '1px solid #ccc', paddingTop: '15px'}}><strong>TOTAL AMOUNT:</strong></td><td style={{textAlign: 'right', borderTop: '1px solid #ccc', paddingTop: '15px', fontSize: '1.1em', fontWeight: 'bold'}}>₹{order.totalAmount?.toFixed(2)}</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div style={{display: 'flex', justifyContent: 'space-between', gap: '20px', flexWrap: 'wrap'}}>
+            <div style={{flex: 1, minWidth: '250px', border: '1px solid #e0e0e0', borderRadius: '8px', padding: '15px', background: '#fff'}}>
+              <h4 style={{marginTop: 0, borderBottom: '1px solid #ccc', paddingBottom: '5px', marginBottom: '10px', color: '#3b82f6'}}>Sold To (Dealer)</h4>
+              <p><strong>Name:</strong> {order.dealerDetails?.businessName || `${order.dealerDetails?.firstName} ${order.dealerDetails?.lastName}`}</p>
+              <p><strong>Email:</strong> {order.dealerDetails?.email}</p>
+              <p><strong>Mobile:</strong> {order.dealerDetails?.mobile}</p>
+            </div>
+            <div style={{flex: 1, minWidth: '250px', border: '1px solid #e0e0e0', borderRadius: '8px', padding: '15px', background: '#fff'}}>
+              <h4 style={{marginTop: 0, borderBottom: '1px solid #ccc', paddingBottom: '5px', marginBottom: '10px', color: '#3b82f6'}}>Seller (Farmer)</h4>
+              <p><strong>Name:</strong> {user?.firstName} {user?.lastName}</p>
+              <p><strong>Email:</strong> {user?.email}</p>
+              <p><strong>Mobile:</strong> {user?.mobile}</p>
+            </div>
+          </div>
+          
+          <div style={{textAlign: 'center', marginTop: '30px', fontSize: '0.9em', color: '#6b7280', paddingTop: '15px', borderTop: '1px solid #e0e0e0'}}>
+            <p>This transaction was securely recorded on {order.assignedDate ? new Date(order.assignedDate).toLocaleDateString() : new Date().toLocaleDateString()}.</p>
+          </div>
+        </div>
+        
+        <div style={{textAlign: 'center', marginTop: '20px'}}>
+          <button className="btn-primary" onClick={handlePrint} style={{padding: '10px 20px'}}>
+            🖨️ Print Receipt
+          </button>
+        </div>
+      </div>
+    </div>
   );
 };
 
