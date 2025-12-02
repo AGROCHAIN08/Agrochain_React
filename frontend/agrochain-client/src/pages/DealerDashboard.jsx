@@ -257,7 +257,6 @@ const DealerDashboard = () => {
     const handleFilterChange = (e) => setFilters({ ...filters, [e.target.id]: e.target.value });
     
     // --- DYNAMIC FILTERS ---
-    // Extract unique product types from the actual data for the filter dropdown
     const availableProductTypes = [...new Set(allProducts.map(p => p.productType))].sort();
 
     const getFilteredProducts = () => {
@@ -407,13 +406,35 @@ const DealerDashboard = () => {
             loadAllData();
         }
     };
+
+    // --- UPDATED INVENTORY QUANTITY CHANGE HANDLER ---
     const handleInventoryQuantityChange = async (item) => {
-         const qty = prompt("New Quantity:", item.quantity);
-         if(qty) {
-            await api.put('/dealer/inventory/update-quantity', { dealerEmail: user.email, inventoryId: item._id, newQuantity: qty });
+         const qtyStr = prompt(`Current Quantity: ${item.quantity}\nEnter New Quantity (Must be less than current):`, item.quantity);
+         
+         if (qtyStr === null) return; // User cancelled
+
+         const newQty = parseFloat(qtyStr);
+         
+         if (isNaN(newQty) || newQty < 0) {
+             alert("Please enter a valid number.");
+             return;
+         }
+
+         if (newQty > item.quantity) {
+             alert("You can only reduce the quantity, not increase it.");
+             return;
+         }
+
+         if (newQty === item.quantity) return; // No change
+
+         try {
+            await api.put('/dealer/inventory/update-quantity', { dealerEmail: user.email, inventoryId: item._id, newQuantity: newQty });
             loadAllData();
+         } catch (err) {
+             alert(err.response?.data?.msg || "Error updating quantity");
          }
     };
+
     const handleRemoveFromInventory = async (item) => {
         if(window.confirm("Remove item?")) {
             await api.delete('/dealer/inventory/remove', { data: { dealerEmail: user.email, inventoryId: item._id } });
@@ -695,6 +716,7 @@ const VehicleCard = ({ vehicle, onDelete, onFree }) => {
     );
 };
 
+// --- UPDATED INVENTORY CARD WITH "Reduce Qty" Button ---
 const InventoryCard = ({ item, onPriceChange, onQtyChange, onRemove, onViewReviews }) => {
     const isLowStock = item.quantity < 50;
     const totalValue = (item.quantity * item.unitPrice).toLocaleString('en-IN');
@@ -730,7 +752,7 @@ const InventoryCard = ({ item, onPriceChange, onQtyChange, onRemove, onViewRevie
                 </div>
 
                 <div className="inv-actions">
-                    <button className="inv-action-btn" onClick={() => onQtyChange(item)}>📦 Change Qty</button>
+                    <button className="inv-action-btn" onClick={() => onQtyChange(item)}>📦 Reduce Qty</button>
                     <button className="inv-action-btn" onClick={() => onPriceChange(item)}>🏷️ Set Price</button>
                     <button className="inv-action-btn delete" onClick={() => onRemove(item)} title="Remove from Inventory">🗑️</button>
                 </div>

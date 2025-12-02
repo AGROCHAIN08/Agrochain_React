@@ -637,6 +637,11 @@ exports.updateInventoryQuantity = async (req, res) => {
       return res.status(404).json({ msg: "Inventory item not found" });
     }
 
+    // --- NEW VALIDATION: ONLY ALLOW REDUCTION ---
+    if (parseFloat(newQuantity) > dealer.inventory[inventoryIndex].quantity) {
+      return res.status(400).json({ msg: "Quantity can only be reduced, not increased." });
+    }
+
     dealer.inventory[inventoryIndex].quantity = parseFloat(newQuantity);
     dealer.inventory[inventoryIndex].totalValue = 
       dealer.inventory[inventoryIndex].unitPrice * parseFloat(newQuantity);

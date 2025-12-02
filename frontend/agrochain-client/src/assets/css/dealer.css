@@ -285,7 +285,7 @@ body {
 .price { font-size: 1.25rem; font-weight: bold; color: var(--primary); margin: 5px 0 15px; }
 .card-actions { margin-top: auto; display: flex; justify-content: space-between; align-items: center; }
 
-.btn-text { background: none; border: none; color: var(--text-light); cursor: pointer; font-size: 0.9rem; text-decoration: underline; }
+.btn-text { background: none; border: none; color: var(--text-light); cursor: pointer; font-size: 0.9rem; text-decoration: none; }
 .action-group { display: flex; gap: 15px; }
 .action-group input { width: 60px; padding: 5px; border: 1px solid #d1d5db; border-radius: 6px; }
 .btn-icon {
