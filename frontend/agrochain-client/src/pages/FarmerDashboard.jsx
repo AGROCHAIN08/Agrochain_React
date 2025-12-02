@@ -162,6 +162,19 @@ const FarmerDashboard = () => {
     loadAllData();
   }, [user, loadAllData]);
 
+  // 🔄 Auto-refresh orders + notifications every 30 seconds 
+  useEffect(() => {
+      if (!user) return;
+
+      const intervalId = setInterval(() => {
+          console.log("Auto-refreshing...");
+          loadAllData();   // refresh crops, orders, notifications
+      }, 10000); // 30 seconds
+
+      return () => clearInterval(intervalId);
+  }, [user, loadAllData]);
+
+
   const handleSignout = () => {
     if (window.confirm("Are you sure you want to sign out?")) {
       logout();
@@ -404,7 +417,6 @@ const FarmerDashboard = () => {
               </form>
             )}
             <div className="products-grid" id="productsGrid">
-              {loading ? <p>Loading products...</p> : null}
               {!loading && crops.length === 0 && (
                 <div className="empty-state">
                   <div className="empty-state-icon">🌱</div>
@@ -470,7 +482,6 @@ const FarmerDashboard = () => {
           <section id="ordersSection">
             <div className="section-header"><h2>📦 My Orders</h2></div>
             <div className="orders-grid" id="farmerOrdersGrid">
-              {loading ? <p>Loading orders...</p> : null}
               {!loading && orders.length === 0 && (
                 <div className="empty-state">
                   <div className="empty-state-icon">📦</div>
@@ -533,7 +544,6 @@ const FarmerDashboard = () => {
           <section id="notificationsSection">
             <div className="section-header"><h2>🔔 Notifications</h2></div>
             <div className="notifications-panel" id="notificationsList">
-              {loading ? <p>Loading notifications...</p> : null}
               {!loading && notifications.length === 0 && (
                 <div className="empty-state"><div className="empty-state-icon">🔔</div><h3>No New Notifications</h3></div>
               )}
