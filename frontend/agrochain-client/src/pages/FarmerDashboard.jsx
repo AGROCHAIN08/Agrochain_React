@@ -112,31 +112,51 @@ const FarmerDashboard = () => {
 
   // --- Data Loading ---
   const loadAllData = useCallback(async () => {
-    if (!user) return;
-    try {
-      setLoading(true);
-      const [cropsRes, ordersRes, notificationsRes, profileRes] = await Promise.all([
-        api.get(`/farmer/crops/${user.email}`),
-        api.get(`/farmer/orders/${user.email}`),
-        api.get(`/farmer/notifications/${user.email}`),
-        api.get(`/auth/profile/${user.email}`)
-      ]);
+  if (!user) return;
+  try {
+    setLoading(true);
+    
+    // Fetch all data in parallel
+    const [cropsRes, ordersRes, notificationsRes, profileRes] = await Promise.all([
+      api.get(`/farmer/crops/${user.email}`),
+      api.get(`/farmer/orders/${user.email}`),
+      api.get(`/farmer/notifications/${user.email}`),
+      api.get(`/auth/profile/${user.email}`)
+    ]);
+    
+    // Auto-delete crops with 0 quantity (await all deletions)
+    const deletePromises = cropsRes.data
+      .filter(crop => crop.harvestQuantity <= 0)
+      .map(crop => 
+        api.delete(`/farmer/crops/${user.email}/${crop._id}?force=true`)
+          .catch(err => console.error("Auto delete failed:", err))
+      );
+    
+    // If any crops were deleted, reload the crops list
+    if (deletePromises.length > 0) {
+      await Promise.all(deletePromises);
+      const updatedCropsRes = await api.get(`/farmer/crops/${user.email}`);
+      setCrops(updatedCropsRes.data);
+    } else {
       setCrops(cropsRes.data);
-      setOrders(ordersRes.data);
-      dispatch(setNotifications(notificationsRes.data));
-      setProfile(profileRes.data);
-      setEditProfileData({
-        farmLocation: profileRes.data.farmLocation || '',
-        latitude: profileRes.data.latitude || '',
-        longitude: profileRes.data.longitude || '',
-        farmSize: profileRes.data.farmSize || ''
-      });
-    } catch (err) {
-      setError(err.message || 'Failed to load data');
-    } finally {
-      setLoading(false);
     }
-  }, [user]);
+    
+    // Set other data
+    setOrders(ordersRes.data);
+    dispatch(setNotifications(notificationsRes.data));
+    setProfile(profileRes.data);
+    setEditProfileData({
+      farmLocation: profileRes.data.farmLocation || '',
+      latitude: profileRes.data.latitude || '',
+      longitude: profileRes.data.longitude || '',
+      farmSize: profileRes.data.farmSize || ''
+    });
+  } catch (err) {
+    setError(err.message || 'Failed to load data');
+  } finally {
+    setLoading(false);
+  }
+}, [user, dispatch]);
 
   useEffect(() => {
     loadAllData();
@@ -222,15 +242,28 @@ const FarmerDashboard = () => {
   };
   
   const handleDeleteCrop = async (cropId) => {
-    if (!window.confirm("Are you sure you want to delete this product?")) return;
     try {
-      await api.delete(`/farmer/crops/${user.email}/${cropId}`);
-      setFormMessage({ type: 'success', text: 'Product deleted!' });
-      loadAllData();
+     await api.delete(`/farmer/crops/${user.email}/${cropId}`);
+    setFormMessage({ type: 'success', text: 'Product deleted!' });
+    await loadAllData();   // 🔥 MUST await to refresh UI instantly
+
     } catch (err) {
-      setFormMessage({ type: 'error', text: err.response?.data?.msg || 'Failed to delete' });
+      const msg = err.response?.data?.msg;
+
+      // 🔥 Auto delete fallback when backend blocks delete
+      if (msg?.includes("quantity") || msg?.includes("0")) {
+        try {
+          await api.delete(`/farmer/crops/${user.email}/${cropId}?force=true`);
+          loadAllData();
+        } catch (e) {
+          setFormMessage({ type: 'error', text: 'Failed to delete crop.' });
+        }
+      } else {
+        setFormMessage({ type: 'error', text: msg || 'Failed to delete crop' });
+      }
     }
   };
+
 
  const handleAcceptBid = async (orderId) => {
   if (!window.confirm('Are you sure you want to accept this bid?')) return;
