@@ -72,10 +72,8 @@ const DealerNavbar = ({ user, cartCount, onSignout, onNavigate, activeSection })
                 </div>
             </nav>
             
-            {/* Mobile Menu Overlay */}
             <div className={`mobile-nav-overlay ${mobileMenuOpen ? 'show' : ''}`} onClick={() => setMobileMenuOpen(false)}></div>
             
-            {/* Mobile Menu Sidebar */}
             <div className={`mobile-nav-menu ${mobileMenuOpen ? 'show' : ''}`}>
                 <div className="mobile-menu-header">
                     <h3>Menu</h3>
@@ -125,9 +123,8 @@ const DealerDashboard = () => {
     const [retailerOrders, setRetailerOrders] = useState([]);
     const [profile, setProfile] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [message, setMessage] = useState({ vehicle: '', product: '', inventory: '' });
-
-    // Cart & Orders (LocalStorage)
+    
+    // Cart & Orders
     const dispatch = useDispatch();
     const { items: cart, totalItems } = useSelector((state) => state.cart);
     const [orders, setOrders] = useState(() => JSON.parse(localStorage.getItem("dealerOrders")) || []);
@@ -170,7 +167,6 @@ const DealerDashboard = () => {
             setRetailerOrders(retOrdRes.data);
         } catch (err) {
             console.error("Error loading data:", err);
-            setMessage(prev => ({ ...prev, product: 'Error loading data' }));
         } finally {
             setLoading(false);
         }
@@ -180,41 +176,66 @@ const DealerDashboard = () => {
     useEffect(() => { loadAllData(); }, [loadAllData]);
     
     // Sync Storage
-    useEffect(() => {
-    dispatch(initializeCart('dealer'));
-    }, [dispatch]);
+    useEffect(() => { dispatch(initializeCart('dealer')); }, [dispatch]);
     useEffect(() => { localStorage.setItem("dealerOrders", JSON.stringify(orders)); }, [orders]);
 
-    // Poll for updates
+    // --- UPDATED POLLING LOGIC (PRODUCTS + ORDERS) ---
     useEffect(() => {
         if (!user) return;
-        const interval = setInterval(async () => {
+        
+        const fetchUpdates = async () => {
              try {
-                const res = await api.get(`/dealer/orders/${user.email}`);
-                const serverOrders = res.data;
-                const localOrders = JSON.parse(localStorage.getItem("dealerOrders")) || [];
-                let hasUpdates = false;
-
-                const updatedOrderItems = localOrders.map(localOrder => {
-                    const serverOrder = serverOrders.find(so => so._id === localOrder.serverOrderId);
-                    if (serverOrder && (serverOrder.bidStatus !== localOrder.bidStatus || !localOrder.serverDataSynced)) {
-                        hasUpdates = true;
-                        localOrder.bidStatus = serverOrder.bidStatus;
-                        localOrder.status = serverOrder.status;
-                        localOrder.serverDataSynced = true;
-                        if (serverOrder.bidStatus === 'Accepted' && serverOrder.receiptNumber) {
-                            localOrder.receiptNumber = serverOrder.receiptNumber;
-                            localOrder.receiptDate = serverOrder.receiptGeneratedAt;
-                            localOrder.farmerName = serverOrder.farmerDetails?.firstName + ' ' + (serverOrder.farmerDetails?.lastName || '');
-                            localOrder.farmerMobile = serverOrder.farmerDetails?.mobile;
-                            loadAllData(); // Refresh inventory
+                // 1. Fetch Orders (Sync Status)
+                const resOrders = await api.get(`/dealer/orders/${user.email}`);
+                const serverOrders = resOrders.data;
+                
+                setOrders(prevOrders => {
+                    let hasChanges = false;
+                    const updatedOrders = prevOrders.map(localOrder => {
+                        const serverOrder = serverOrders.find(so => 
+                            so._id === localOrder.serverOrderId || 
+                            (so.productId === localOrder._id && so.dealerEmail === user.email)
+                        );
+                        
+                        if (serverOrder) {
+                            if (localOrder.bidStatus !== serverOrder.bidStatus || 
+                                localOrder.status !== serverOrder.status ||
+                                localOrder.receiptNumber !== serverOrder.receiptNumber) {
+                                hasChanges = true;
+                                if (serverOrder.bidStatus === 'Accepted' && localOrder.bidStatus !== 'Accepted') {
+                                    loadAllData(); // Refresh inventory if bid accepted
+                                }
+                                return {
+                                    ...localOrder,
+                                    serverOrderId: serverOrder._id,
+                                    serverDataSynced: true,
+                                    bidStatus: serverOrder.bidStatus,
+                                    status: serverOrder.status,
+                                    receiptNumber: serverOrder.receiptNumber,
+                                    receiptDate: serverOrder.receiptGeneratedAt,
+                                    farmerName: serverOrder.farmerDetails?.firstName + ' ' + (serverOrder.farmerDetails?.lastName || ''),
+                                    farmerMobile: serverOrder.farmerDetails?.mobile,
+                                    totalAmount: serverOrder.totalAmount,
+                                    bidPrice: serverOrder.bidPrice
+                                };
+                            }
                         }
-                    }
-                    return localOrder;
+                        return localOrder;
+                    });
+                    return hasChanges ? updatedOrders : prevOrders;
                 });
-                if (hasUpdates) setOrders(updatedOrderItems);
-             } catch(e) { console.error(e); }
-        }, 10000);
+
+                // 2. Fetch Products (Dynamic Loading)
+                const resProducts = await api.get('/dealer/all-products');
+                // Update state to reflect any new products added by farmers in real-time
+                setAllProducts(resProducts.data);
+
+             } catch(e) { console.error("Polling error:", e); }
+        };
+
+        const interval = setInterval(fetchUpdates, 5000); // Poll every 5 seconds
+        fetchUpdates(); // Initial call
+
         return () => clearInterval(interval);
     }, [user, loadAllData]);
 
@@ -235,6 +256,10 @@ const DealerDashboard = () => {
 
     const handleFilterChange = (e) => setFilters({ ...filters, [e.target.id]: e.target.value });
     
+    // --- DYNAMIC FILTERS ---
+    // Extract unique product types from the actual data for the filter dropdown
+    const availableProductTypes = [...new Set(allProducts.map(p => p.productType))].sort();
+
     const getFilteredProducts = () => {
         return allProducts.filter(p => {
             if (p.harvestQuantity <= 0) return false;
@@ -252,14 +277,9 @@ const DealerDashboard = () => {
         if (qty > product.harvestQuantity) return alert("Exceeds available stock");
         
         dispatch(addToCart({
-            item: { 
-            ...product, 
-            quantity: qty, 
-            originalHarvestQuantity: product.harvestQuantity 
-            },
+            item: { ...product, quantity: qty, originalHarvestQuantity: product.harvestQuantity },
             userRole: 'dealer'
         }));
-        
         setProductQuantities({ ...productQuantities, [product._id]: '' });
         alert("Added to cart");
     };
@@ -280,7 +300,7 @@ const DealerDashboard = () => {
             vehicleAssigned: false, 
             reviewSubmitted: false, 
             bidPlaced: false, 
-            bidStatus: null 
+            bidStatus: 'Pending Vehicle' 
         }]);
         handleRemoveFromCart(item._id);
         alert("Proceed to Orders to assign vehicle.");
@@ -295,7 +315,6 @@ const DealerDashboard = () => {
             await api.post(`/dealer/vehicles/${user.email}`, { ...vehicleFormData, dealerEmail: user.email });
             setVehicleFormData({ vehicleId: '', vehicleType: '', temperatureCapacity: '' });
             loadAllData();
-            setMessage({ ...message, vehicle: 'Vehicle Added!' });
         } catch (err) { alert("Error adding vehicle"); }
     };
     const handleDeleteVehicle = async (id) => {
@@ -332,7 +351,12 @@ const DealerDashboard = () => {
                 quantity: selectedData.quantity,
                 tentativeDate: e.target.tentativeDate.value
             });
-            setOrders(prev => prev.map(o => o.orderId === selectedData.orderId ? { ...o, vehicleAssigned: true, serverOrderId: res.data.orderId } : o));
+            setOrders(prev => prev.map(o => o.orderId === selectedData.orderId ? { 
+                ...o, 
+                vehicleAssigned: true, 
+                serverOrderId: res.data.orderId,
+                status: 'Vehicle Assigned' 
+            } : o));
             closeModal('assignVehicle');
             loadAllData();
             alert("Vehicle Assigned!");
@@ -365,21 +389,17 @@ const DealerDashboard = () => {
         } catch (err) { alert("Error placing bid"); }
     };
 
-    // Handler for profile update
     const handleProfileUpdate = async (updatedData) => {
         try {
-            // Using a PUT request to update the profile by email
             const res = await api.put(`/dealer/profile/${user.email}`, updatedData);
-            setProfile(res.data); // Update local profile state
+            setProfile(res.data);
             closeModal('editProfile');
             alert("Profile updated successfully!");
         } catch (err) {
-            console.error("Profile update error:", err);
-            alert(err.response?.data?.msg || err.message || "Error updating profile. Check network and backend endpoint.");
+            alert(err.response?.data?.msg || "Error updating profile.");
         }
     };
 
-    // Inventory Handlers
     const handleInventoryPriceChange = async (item) => {
         const price = prompt("New Price:", item.unitPrice);
         if(price) {
@@ -404,7 +424,6 @@ const DealerDashboard = () => {
     if (loading && !profile) return <div style={{textAlign: 'center', padding: '50px'}}>Loading...</div>;
     if (!profile) return <div>Error loading profile.</div>;
 
-    // Inventory Stats
     const totalInvItems = inventory.reduce((sum, i) => sum + (i.quantity || 0), 0);
     const totalInvValue = inventory.reduce((sum, i) => sum + (i.totalValue || (i.unitPrice * i.quantity) || 0), 0);
 
@@ -419,18 +438,17 @@ const DealerDashboard = () => {
             />
             
             <div className="main-container">
-                {/* Sidebar Filter (Only visible on Browse) */}
                 {activeSection === 'browse' && (
                     <aside className="sidebar-filters">
                         <h3>🔍 Filter Products</h3>
                         <div className="filter-group">
                             <label>Type</label>
+                            {/* DYNAMIC FILTER DROPDOWN */}
                             <select id="filterProductType" value={filters.filterProductType} onChange={handleFilterChange}>
                                 <option value="">All Types</option>
-                                <option value="Fruit">Fruit</option>
-                                <option value="Vegetable">Vegetable</option>
-                                <option value="Cereal">Cereal</option>
-                                <option value="Spices">Spices</option>
+                                {availableProductTypes.map(type => (
+                                    <option key={type} value={type}>{type}</option>
+                                ))}
                             </select>
                         </div>
                         <div className="filter-group">
@@ -508,8 +526,6 @@ const DealerDashboard = () => {
                         <div className="section-header">
                             <h2>Vehicle Management</h2>
                         </div>
-
-                        {/* Enhanced Add Vehicle Form */}
                         <div className="vehicle-form-container">
                              <div className="vehicle-form-header">
                                 <h3>Add New Vehicle</h3>
@@ -517,23 +533,11 @@ const DealerDashboard = () => {
                              <form onSubmit={handleAddVehicle} className="vehicle-add-form">
                                 <div className="form-group">
                                     <label>Vehicle Registration No.</label>
-                                    <input 
-                                        type="text" 
-                                        id="vehicleId" 
-                                        placeholder="e.g. MH-12-AB-1234" 
-                                        value={vehicleFormData.vehicleId} 
-                                        onChange={handleVehicleFormChange} 
-                                        required 
-                                    />
+                                    <input type="text" id="vehicleId" placeholder="e.g. MH-12-AB-1234" value={vehicleFormData.vehicleId} onChange={handleVehicleFormChange} required />
                                 </div>
                                 <div className="form-group">
                                     <label>Vehicle Type</label>
-                                    <select 
-                                        id="vehicleType" 
-                                        value={vehicleFormData.vehicleType} 
-                                        onChange={handleVehicleFormChange} 
-                                        required
-                                    >
+                                    <select id="vehicleType" value={vehicleFormData.vehicleType} onChange={handleVehicleFormChange} required>
                                         <option value="">Select Type...</option>
                                         <option value="Reefer Truck (5 MT)">Reefer Truck (5 MT)</option>
                                         <option value="Heavy Truck (10 MT)">Heavy Truck (10 MT)</option>
@@ -543,21 +547,11 @@ const DealerDashboard = () => {
                                 </div>
                                 <div className="form-group">
                                     <label>Temperature Capacity</label>
-                                    <input 
-                                        type="text" 
-                                        id="temperatureCapacity" 
-                                        placeholder="e.g. -18°C to 4°C" 
-                                        value={vehicleFormData.temperatureCapacity} 
-                                        onChange={handleVehicleFormChange} 
-                                        required 
-                                    />
+                                    <input type="text" id="temperatureCapacity" placeholder="e.g. -18°C to 4°C" value={vehicleFormData.temperatureCapacity} onChange={handleVehicleFormChange} required />
                                 </div>
-                                <button type="submit" className="btn-add-vehicle">
-                                    Add Vechical
-                                </button>
+                                <button type="submit" className="btn-add-vehicle">Add Vehicle</button>
                              </form>
                         </div>
-
                         <div className="vehicles-grid">
                             {allVehicles.length === 0 ? (
                                 <div className="empty-state"><div style={{fontSize:'3rem'}}>🚚</div><h3>No vehicles in fleet</h3></div>
@@ -571,20 +565,16 @@ const DealerDashboard = () => {
 
                     {/* RETAILER ORDERS SECTION */}
                     <section className={activeSection === 'retailerOrders' ? 'active-section' : 'hidden-section'}>
-                    <div className="section-header"><h2>🛍️ Orders from Retailers</h2></div>
-                    <div className="orders-grid">
-                    {retailerOrders.length === 0 ? <div className="empty-state"><h3>No orders received.</h3></div> :
-                    retailerOrders.map(order => (
-                        <RetailerOrderCard 
-                            key={order._id} 
-                            order={order} 
-                            onViewReceipt={openModal} // Pass the handler
-                        />
-                    ))}
-                    </div>
+                        <div className="section-header"><h2>🛍️ Orders from Retailers</h2></div>
+                        <div className="orders-grid">
+                            {retailerOrders.length === 0 ? <div className="empty-state"><h3>No orders received.</h3></div> :
+                            retailerOrders.map(order => (
+                                <RetailerOrderCard key={order._id} order={order} onViewReceipt={openModal} />
+                            ))}
+                        </div>
                      </section>
 
-                    {/* PROFILE SECTION - PROFESSIONAL */}
+                    {/* PROFILE SECTION */}
                     <section className={activeSection === 'profile' ? 'active-section' : 'hidden-section'}>
                         <div className="profile-container">
                             <div className="profile-header-card">
@@ -594,13 +584,9 @@ const DealerDashboard = () => {
                                 </div>
                                 <div className="profile-main-info">
                                     <h1>{profile.businessName || `${profile.firstName} ${profile.lastName}`}</h1>
-                                  
-                                    <button className="btn-edit-profile" onClick={() => openModal('editProfile', profile)}>
-                                        ✏️ Edit Profile
-                                    </button>
+                                    <button className="btn-edit-profile" onClick={() => openModal('editProfile', profile)}>✏️ Edit Profile</button>
                                 </div>
                             </div>
-                            
                             <div className="profile-details-grid">
                                 <div className="detail-group">
                                     <h3>🏢 Business Information</h3>
@@ -617,64 +603,18 @@ const DealerDashboard = () => {
                             </div>
                         </div>
                     </section>
-
                 </main>
             </div>
             
             {/* --- MODALS --- */}
-            
             <FarmerModal show={modal.farmer} onClose={() => closeModal('farmer')} farmerEmail={selectedData?.farmerEmail} />
-            
-            <AssignVehicleModal 
-                show={modal.assignVehicle} 
-                onClose={() => closeModal('assignVehicle')} 
-                onSubmit={handleAssignVehicle} 
-                vehicles={allVehicles.filter(v => v.currentStatus === 'AVAILABLE')} 
-            />
-            
-            <ReviewModal 
-                show={modal.review} 
-                onClose={() => closeModal('review')} 
-                onSubmit={handleSubmitReview} 
-                data={reviewData} 
-                setData={setReviewData} 
-                productName={selectedData?.varietySpecies} 
-            />
-
-            <BidModal 
-                show={modal.bid} 
-                onClose={() => closeModal('bid')} 
-                onSubmit={handlePlaceBid} 
-                setBidPrice={setBidPrice} 
-                order={selectedData} 
-            />
-            
-            <ReceiptModal 
-                show={modal.receipt} 
-                onClose={() => closeModal('receipt')} 
-                order={selectedData} 
-                user={profile} 
-            />
-
-            <ViewReviewsModal 
-                show={modal.viewReviews} 
-                onClose={() => closeModal('viewReviews')} 
-                product={selectedData} 
-            />
-
-            <EditProfileModal
-                show={modal.editProfile}
-                onClose={() => closeModal('editProfile')}
-                profileData={profile}
-                onSave={handleProfileUpdate}
-            />
-
-            <RetailerReceiptModal 
-                show={modal.retailerReceipt} 
-                onClose={() => closeModal('retailerReceipt')} 
-                order={selectedData} 
-                dealer={profile} 
-            />
+            <AssignVehicleModal show={modal.assignVehicle} onClose={() => closeModal('assignVehicle')} onSubmit={handleAssignVehicle} vehicles={allVehicles.filter(v => v.currentStatus === 'AVAILABLE')} />
+            <ReviewModal show={modal.review} onClose={() => closeModal('review')} onSubmit={handleSubmitReview} data={reviewData} setData={setReviewData} productName={selectedData?.varietySpecies} />
+            <BidModal show={modal.bid} onClose={() => closeModal('bid')} onSubmit={handlePlaceBid} setBidPrice={setBidPrice} order={selectedData} />
+            <ReceiptModal show={modal.receipt} onClose={() => closeModal('receipt')} order={selectedData} user={profile} />
+            <ViewReviewsModal show={modal.viewReviews} onClose={() => closeModal('viewReviews')} product={selectedData} />
+            <EditProfileModal show={modal.editProfile} onClose={() => closeModal('editProfile')} profileData={profile} onSave={handleProfileUpdate} />
+            <RetailerReceiptModal show={modal.retailerReceipt} onClose={() => closeModal('retailerReceipt')} order={selectedData} dealer={profile} />
         </>
     );
 };
@@ -756,8 +696,7 @@ const VehicleCard = ({ vehicle, onDelete, onFree }) => {
 };
 
 const InventoryCard = ({ item, onPriceChange, onQtyChange, onRemove, onViewReviews }) => {
-    // Determine stock status
-    const isLowStock = item.quantity < 50; // Threshold for low stock
+    const isLowStock = item.quantity < 50;
     const totalValue = (item.quantity * item.unitPrice).toLocaleString('en-IN');
 
     return (
@@ -791,15 +730,9 @@ const InventoryCard = ({ item, onPriceChange, onQtyChange, onRemove, onViewRevie
                 </div>
 
                 <div className="inv-actions">
-                    <button className="inv-action-btn" onClick={() => onQtyChange(item)}>
-                        📦 Change Qty
-                    </button>
-                    <button className="inv-action-btn" onClick={() => onPriceChange(item)}>
-                        🏷️ Set Price
-                    </button>
-                    <button className="inv-action-btn delete" onClick={() => onRemove(item)} title="Remove from Inventory">
-                        🗑️
-                    </button>
+                    <button className="inv-action-btn" onClick={() => onQtyChange(item)}>📦 Change Qty</button>
+                    <button className="inv-action-btn" onClick={() => onPriceChange(item)}>🏷️ Set Price</button>
+                    <button className="inv-action-btn delete" onClick={() => onRemove(item)} title="Remove from Inventory">🗑️</button>
                 </div>
 
                 {item.retailerReviews && item.retailerReviews.length > 0 && (
@@ -879,8 +812,8 @@ const FarmerOrderCard = ({ item, onAssignVehicle, onPlaceBid, onAddReview, onVie
     let action = null;
     const skipReview = item.quantity >= item.originalHarvestQuantity;
 
-    // --- Status Logic ---
     if (item.bidStatus === 'Accepted') {
+        statusBadge = <span className="status-badge success">✓ Accepted</span>;
         action = (
             <button className="btn-action primary" onClick={() => onViewReceipt('receipt', item)}>
                 📄 View Receipt
@@ -888,7 +821,7 @@ const FarmerOrderCard = ({ item, onAssignVehicle, onPlaceBid, onAddReview, onVie
         );
     } else if (item.bidStatus === 'Rejected') {
         statusBadge = <span className="status-badge error">❌ Rejected</span>;
-    } else if (item.bidPlaced) {
+    } else if (item.bidPlaced || item.status === 'Bid Placed') {
         statusBadge = <span className="status-badge warning">⏳ Bid Pending</span>;
     } else if (item.vehicleAssigned) {
         statusBadge = <span className="status-badge info">🚚 Vehicle Assigned</span>;
@@ -914,23 +847,20 @@ const FarmerOrderCard = ({ item, onAssignVehicle, onPlaceBid, onAddReview, onVie
         );
     }
 
-    // Date formatter
     const orderDate = item.orderId.includes('-') 
         ? new Date(parseInt(item.orderId.split('-')[1])).toLocaleDateString() 
         : 'Recent';
 
     return (
         <div className="order-card-pro">
-            {/* Header: ID and Status */}
             <div className="order-header">
                 <div className="order-id-label">
                     <span>ID:</span>
-                    <span>{item.receiptNumber || item.serverOrderId || 'Processing...'}</span>
+                    <span>{item.receiptNumber || (item.serverOrderId ? item.serverOrderId.slice(-6).toUpperCase() : 'Local')}</span>
                 </div>
                 {statusBadge}
             </div>
             
-            {/* Main Content */}
             <div className="order-content">
                 <div className="order-image">
                      <img src={item.imageUrl} alt={item.varietySpecies} />
@@ -955,25 +885,19 @@ const FarmerOrderCard = ({ item, onAssignVehicle, onPlaceBid, onAddReview, onVie
                             <span className="label">Target Price</span>
                             <span className="value">₹{item.targetPrice}</span>
                         </div>
-                        <div className="detail-item">
-                            <span className="label">Bid Status</span>
-                            <span className="value" style={{textTransform:'capitalize'}}>
-                                {item.bidStatus || 'Not Placed'}
-                            </span>
-                        </div>
-
-                        {/* Special Receipt Box if available */}
-                        {item.receiptNumber && (
-                             <div className="detail-item receipt-box">
-                                <span className="label">Receipt Generated</span>
-                                <span className="value">#{item.receiptNumber}</span>
+                        
+                        {item.bidStatus && (
+                             <div className="detail-item">
+                                <span className="label">Bid Status</span>
+                                <span className="value" style={{textTransform:'capitalize', color: item.bidStatus === 'Accepted' ? '#15803d' : '#b45309'}}>
+                                    {item.bidStatus}
+                                </span>
                             </div>
                         )}
                     </div>
                 </div>
             </div>
 
-            {/* Footer: Date and Action Button */}
             <div className="order-footer">
                 <div className="order-date">
                     Ordered on: {orderDate}
@@ -987,7 +911,6 @@ const FarmerOrderCard = ({ item, onAssignVehicle, onPlaceBid, onAddReview, onVie
 };
 
 const RetailerOrderCard = ({ order, onViewReceipt }) => {
-    // Helper for status badge color
     const getStatusClass = (status) => {
         const s = status?.toLowerCase() || '';
         if (s.includes('delivered') || s.includes('completed')) return 'success';
@@ -1039,8 +962,6 @@ const RetailerOrderCard = ({ order, onViewReceipt }) => {
         </div>
     );
 };
-
-// --- MODALS ---
 
 const FarmerModal = ({ show, onClose, farmerEmail }) => {
     const [farmer, setFarmer] = useState(null);
@@ -1134,28 +1055,6 @@ const BidModal = ({ show, onClose, onSubmit, setBidPrice, order }) => {
     );
 };
 
-const ReceiptModal = ({ show, onClose, order, user }) => {
-    if (!show) return null;
-    return (
-        <div className="modal" style={{display:'block'}} onClick={onClose}>
-            <div className="modal-content" onClick={e => e.stopPropagation()} style={{textAlign:'center'}}>
-                <span className="close" onClick={onClose}>&times;</span>
-                <h3>Order Receipt</h3>
-                <p><strong>Receipt #:</strong> {order.receiptNumber}</p>
-                <div style={{textAlign:'left', background:'#f9f9f9', padding:'15px', borderRadius:'8px', margin:'15px 0'}}>
-                    <p>Item: {order.varietySpecies}</p>
-                    <p>Qty: {order.quantity}</p>
-                    <p>Amount: ₹{(order.bidPrice * order.quantity).toFixed(2)}</p>
-                    <hr/>
-                    <p>Farmer: {order.farmerName}</p>
-                    <p>Dealer: {user.businessName}</p>
-                </div>
-                <button className="btn-primary" onClick={() => window.print()}>Print</button>
-            </div>
-        </div>
-    );
-};
-
 const ViewReviewsModal = ({ show, onClose, product }) => {
     if (!show || !product) return null;
     const reviews = product.retailerReviews || product.reviews || [];
@@ -1189,20 +1088,13 @@ const ViewReviewsModal = ({ show, onClose, product }) => {
     );
 };
 
-// --- UPDATED PROFILE EDIT MODAL COMPONENT WITH VALIDATION ---
 const EditProfileModal = ({ show, onClose, profileData, onSave }) => {
     const [formData, setFormData] = useState({});
-    const [validationErrors, setValidationErrors] = useState({}); // State for validation errors
+    const [validationErrors, setValidationErrors] = useState({});
 
-    // Simple inline style for error messages
-    const errorStyle = {
-        color: '#ef4444', // Tailwind red-500 equivalent
-        fontSize: '0.8rem',
-        marginTop: '5px',
-    };
+    const errorStyle = { color: '#ef4444', fontSize: '0.8rem', marginTop: '5px' };
 
     useEffect(() => {
-        // Initialize form data with current profile data when the modal is shown
         if (show && profileData) {
             setFormData({
                 firstName: profileData.firstName || '',
@@ -1211,10 +1103,9 @@ const EditProfileModal = ({ show, onClose, profileData, onSave }) => {
                 mobile: profileData.mobile || '',
                 gstin: profileData.gstin || '',
                 warehouseAddress: profileData.warehouseAddress || '',
-                // Convert array to comma-separated string for the form input
                 preferredCommodities: profileData.preferredCommodities?.join(', ') || '',
             });
-            setValidationErrors({}); // Clear errors when modal opens
+            setValidationErrors({});
         }
     }, [show, profileData]);
 
@@ -1222,19 +1113,16 @@ const EditProfileModal = ({ show, onClose, profileData, onSave }) => {
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
-        // Clear error for the field being edited
         if (validationErrors[e.target.name]) {
             setValidationErrors({ ...validationErrors, [e.target.name]: null });
         }
     };
 
-    // New Validation Function
     const validateForm = () => {
         const errors = {};
         let isValid = true;
         const { firstName, lastName, mobile, gstin } = formData;
         
-        // 1. Name Validation (must be a non-empty string of letters/spaces)
         if (!firstName || firstName.trim().length === 0 || !/^[A-Za-z\s]+$/.test(firstName.trim())) {
             errors.firstName = "First Name is required and must contain only letters.";
             isValid = false;
@@ -1243,8 +1131,6 @@ const EditProfileModal = ({ show, onClose, profileData, onSave }) => {
             errors.lastName = "Last Name is required and must contain only letters.";
             isValid = false;
         }
-
-        // 2. Mobile Validation (10 digits)
         if (mobile && mobile.length > 0 && !/^\d{10}$/.test(mobile)) {
             errors.mobile = "Mobile number must be exactly 10 digits.";
             isValid = false;
@@ -1252,8 +1138,6 @@ const EditProfileModal = ({ show, onClose, profileData, onSave }) => {
             errors.mobile = "Mobile number is required.";
             isValid = false;
         }
-
-        // 3. GSTIN Validation (12 alphanumeric characters, case-insensitive check)
         if (gstin && gstin.length > 0 && !/^[a-zA-Z0-9]{12}$/.test(gstin)) {
             errors.gstin = "GSTIN must be exactly 12 alphanumeric characters (if provided).";
             isValid = false;
@@ -1265,13 +1149,10 @@ const EditProfileModal = ({ show, onClose, profileData, onSave }) => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        
-        if (!validateForm()) { // Run validation before saving
+        if (!validateForm()) {
             alert("Please fix the highlighted errors before saving.");
-            return; // Stop submission
+            return;
         }
-        
-        // Validation passed, proceed with data preparation and saving
         const updatedData = {
             ...formData,
             preferredCommodities: formData.preferredCommodities ? formData.preferredCommodities.split(',').map(s => s.trim()) : [],
@@ -1285,7 +1166,6 @@ const EditProfileModal = ({ show, onClose, profileData, onSave }) => {
                 <span className="close" onClick={onClose}>&times;</span>
                 <h3>✏️ Edit Profile</h3>
                 <form className="profile-edit-form" onSubmit={handleSubmit}>
-                    
                     <div className="form-section">
                         <h3>Personal Details</h3>
                         <div className="form-grid">
@@ -1306,7 +1186,6 @@ const EditProfileModal = ({ show, onClose, profileData, onSave }) => {
                             </div>
                         </div>
                     </div>
-
                     <div className="form-section">
                         <h3>Business Information</h3>
                         <div className="form-grid">
@@ -1329,7 +1208,6 @@ const EditProfileModal = ({ show, onClose, profileData, onSave }) => {
                             </div>
                         </div>
                     </div>
-
                     <div className="form-actions">
                         <button type="button" className="btn-cancel" onClick={onClose}>Cancel</button>
                         <button type="submit" className="btn-save">Save Changes</button>
@@ -1340,5 +1218,68 @@ const EditProfileModal = ({ show, onClose, profileData, onSave }) => {
     );
 };
 
+const ReceiptModal = ({ show, onClose, order, user }) => {
+    if (!show || !order) return null;
+
+    return (
+        <div className="modal" style={{display:'block'}} onClick={onClose}>
+            <div className="modal-content" onClick={e => e.stopPropagation()} style={{maxWidth:'500px'}}>
+                <span className="close" onClick={onClose}>&times;</span>
+                
+                <div className="receipt-paper" id="printable-receipt">
+                    <div className="receipt-header">
+                        <h2>OFFICIAL RECEIPT</h2>
+                        <p><strong>AgroChain Dealer Network</strong></p>
+                        <p>{user?.businessName}</p>
+                        <p style={{fontSize:'0.8rem'}}>{user?.warehouseAddress}</p>
+                        <p style={{fontSize:'0.8rem', marginTop:'5px'}}>GSTIN: {user?.gstin || 'N/A'}</p>
+                    </div>
+
+                    <div className="receipt-row">
+                        <span><strong>Receipt No:</strong></span>
+                        <span>{order.receiptNumber}</span>
+                    </div>
+                    <div className="receipt-row">
+                        <span><strong>Date:</strong></span>
+                        <span>{new Date(order.receiptDate || Date.now()).toLocaleDateString()}</span>
+                    </div>
+                    <div className="receipt-row">
+                        <span><strong>Purchased From:</strong></span>
+                        <span>{order.farmerName}</span>
+                    </div>
+
+                    <div className="receipt-divider"></div>
+
+                    <div className="receipt-row" style={{fontWeight:'bold', borderBottom:'1px solid #eee', paddingBottom:'5px'}}>
+                        <span>Item</span>
+                        <span>Total</span>
+                    </div>
+
+                    <div className="receipt-row">
+                        <span>
+                            {order.varietySpecies} <br/>
+                            <small style={{color:'#666'}}>{order.quantity} {order.unitOfSale} x ₹{order.bidPrice}</small>
+                        </span>
+                        <span>₹{(order.quantity * order.bidPrice).toFixed(2)}</span>
+                    </div>
+
+                    <div className="receipt-total receipt-row">
+                        <span>TOTAL PAID</span>
+                        <span>₹{(order.totalAmount || (order.quantity * order.bidPrice)).toFixed(2)}</span>
+                    </div>
+
+                    <div style={{textAlign:'center', marginTop:'20px', fontSize:'0.8rem', fontStyle:'italic', color:'#888'}}>
+                        <p>Payment Status: COMPLETED</p>
+                        <p>Generated via AgroChain</p>
+                    </div>
+                </div>
+
+                <button className="btn-primary" style={{width:'100%'}} onClick={() => window.print()}>
+                    🖨️ Print Receipt
+                </button>
+            </div>
+        </div>
+    );
+};
 
 export default DealerDashboard;
