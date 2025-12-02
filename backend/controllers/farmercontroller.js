@@ -196,11 +196,13 @@ exports.deleteCrop = async (req, res) => {
       status: { $in: ['Vehicle Assigned', 'In Transit', 'Bid Placed'] }
     });
 
-    if (activeOrder) {
+    // ✅ Only block delete if there is active order AND some stock still left
+    if (activeOrder && crop.harvestQuantity > 0) {
       return res.status(400).json({ 
-        msg: "Cannot delete product with active vehicle assignment" 
+        msg: "Cannot delete product with active vehicle assignment while quantity > 0" 
       });
     }
+
 
     farmer.crops.splice(cropIndex, 1);
     await farmer.save();
