@@ -256,14 +256,18 @@ body {
 }
 
 
-
+/* ===========================
+   SECTION HEADER FIX
+   =========================== */
 .section-header {
-  display: flex;
+  display: flex !important;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 25px;
   flex-wrap: wrap;
   gap: 15px;
+  width: 100%;
+  visibility: visible !important;
 }
 
 .section-header h2 {
@@ -272,22 +276,38 @@ body {
   font-weight: 600;
 }
 
-/* React sections don't need display:none, they're conditionally rendered */
-section {
-  animation: fadeIn 0.4s ease;
+/* Make sure the add button is visible */
+.add-btn {
+  background: linear-gradient(135deg, #4caf50, #2e8b57);
+  color: white;
+  padding: 12px 24px;
+  border: none;
+  cursor: pointer;
+  border-radius: 8px;
+  font-size: 0.95em;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+  white-space: nowrap;
+  display: inline-block !important;
+  visibility: visible !important;
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.add-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
 }
 
+.add-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Ensure inventory section is visible */
+#inventorySection {
+  display: block !important;
+  visibility: visible !important;
+}
 /* ===========================
    FORM STYLING
    =========================== */
