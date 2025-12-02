@@ -1,19 +1,10 @@
 /* ===========================
    GLOBAL STYLES
    =========================== */
-
-/* Single source of truth for navbar height so spacing is consistent */
-:root {
-  --navbar-height: 72px; /* adjust if you change navbar padding/size */
-}
-
 body {
   font-family: Arial, sans-serif;
   margin: 0;
   background-color: #f9f9f9;
-  /* Prevent any unexpected top spacing from body */
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }
 
 /* ===========================
@@ -24,20 +15,15 @@ body {
   justify-content: space-between;
   align-items: center;
   background-color: #ffffff;
-  /* padding chosen so total navbar height ~= --navbar-height */
   padding: 12px 40px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  /* Fixed at top so it never scrolls away */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  /* UPDATED: Fixed position and high Z-Index to prevent disappearing */
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
-  height: var(--navbar-height);
-  z-index: 99999; /* very high to stay above other elements */
-  /* promote to its own layer to avoid disappearing due to parent transforms */
-  transform: translateZ(0);
-  -webkit-backface-visibility: hidden;
-  backface-visibility: hidden;
+  z-index: 9999; 
+  height: 50px; 
 }
 
 .nav-left {
@@ -121,6 +107,7 @@ body {
   white-space: nowrap;
 }
 
+
 .profile-icon {
   font-size: 1.3em;
 }
@@ -191,17 +178,12 @@ body {
 /* ===========================
    MAIN CONTENT AREA
    =========================== */
-/* IMPORTANT:
-   The content padding-top must match the navbar height so there is no extra white gap
-   between the navbar and the content. Use calc so we can have a small breathing room (8-12px).
-*/
 .content {
-  padding: calc(var(--navbar-height) + 12px) 20px 20px 20px;
+  /* UPDATED: Reduced to 64px to aggressively remove whitespace gap */
+  padding: 64px 20px 20px 20px; 
   width: 100%;
-  box-sizing: border-box;
 }
 
-/* Sections will be positioned under the navbar now without an extra gap */
 .section {
   display: none;
   background: white;
@@ -242,7 +224,6 @@ body {
   align-items: flex-start;
 }
 
-/* Filter panel: make sticky right under navbar */
 .filter-panel {
   flex: 0 0 300px;
   background: #ffffff;
@@ -250,7 +231,8 @@ body {
   border-radius: 12px;
   box-shadow: 0 2px 10px rgba(0,0,0,0.08);
   position: sticky;
-  top: calc(var(--navbar-height) + 12px); /* aligns the top edge with the content start */
+  /* UPDATED: Aligns with the new content padding */
+  top: 64px; 
 }
 
 .filter-title {
@@ -308,13 +290,11 @@ body {
 }
 
 .form-group input, 
-.form-group select, 
-.form-group textarea {
+.form-group select {
   padding: 10px;
   border: 1px solid #d1d5db;
   border-radius: 6px;
   font-size: 14px;
-  box-sizing: border-box;
 }
 
 .btn-primary {
@@ -457,7 +437,6 @@ body {
     border: 1px solid #ccc;
     border-radius: 4px;
     text-align: center;
-    box-sizing: border-box;
 }
 
 .add-to-cart-section .btn-add-cart {
@@ -562,7 +541,7 @@ body {
 .modal {
   display: none;
   position: fixed;
-  z-index: 100000; /* above navbar modals */
+  z-index: 1000;
   left: 0;
   top: 0;
   width: 100%;
@@ -794,7 +773,6 @@ body {
     width: 100%;
     position: static;
     margin-bottom: 20px;
-    top: auto;
   }
   
   .inventory-grid {
@@ -859,9 +837,9 @@ body {
     display: none;
   }
   
-  /* For mobile we want slightly larger top padding (navbar wraps) */
   .content {
-    padding: calc(var(--navbar-height) + 40px) 10px 10px 10px;
+    padding: 10px;
+    padding-top: 110px;
   }
   
   .section {
@@ -959,10 +937,10 @@ body {
   .profile-icon {
     font-size: 1.1em;
   }
-
-  /* keep mobile content top padding consistent */
+  
   .content {
-    padding: calc(var(--navbar-height) + 48px) 10px 10px 10px;
+    padding: 10px;
+    padding-top: 110px;
   }
   
   .section {
@@ -1027,44 +1005,6 @@ body {
     font-size: 24px;
   }
 }
-
-/* ===========================
-   REST OF THE STYLES (Forms, reviews, profile, etc.)
-   (kept unchanged but included to make this file self-contained)
-   =========================== */
-
-/* Star Rating Styles */
-.star-rating {
-  display: flex;
-  flex-direction: row-reverse; 
-  justify-content: flex-start;
-  font-size: 2.5em;
-  cursor: pointer;
-}
-
-.star-rating .star {
-  color: #ddd;
-  transition: color 0.2s ease-in-out;
-  padding: 0 2px;
-}
-
-.star-rating:hover .star {
-  color: #f59e0b;
-}
-
-.star-rating .star:hover ~ .star {
-  color: #ddd;
-}
-
-.star-rating input:checked ~ .star {
-    color: #f59e0b;
-}
-
-.star-rating .star.selected,
-.star-rating .star.selected ~ .star {
-    color: #f59e0b;
-}
-
 
 /* ===========================
    PROFESSIONAL REVIEW FORM STYLES
@@ -1352,218 +1292,3 @@ body {
     margin-top: 15px;
   }
 }
-/* =========================
-   retailer.css - Aggressive override
-   Replaces previous file. Use as-is and ensure it's loaded last.
-   ========================= */
-
-/* single source of truth for sizing */
-:root {
-  --navbar-height: 72px;
-}
-
-/* Reset potential spacing caused by other CSS */
-html, body, #root {
-  height: 100% !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  box-sizing: border-box !important;
-  -webkit-font-smoothing: antialiased !important;
-  -moz-osx-font-smoothing: grayscale !important;
-}
-
-/* Catch-all selectors for header/nav elements so we override frameworks too */
-header, .navbar, nav, .top-nav, .site-header, .app-header, #navbar, .main-nav {
-  position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
-  height: var(--navbar-height) !important;
-  min-height: var(--navbar-height) !important;
-  z-index: 999999 !important; /* extremely high to stay above everything */
-  background: #ffffff !important;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08) !important;
-  transform: translateZ(0) !important; /* promote to its own layer */
-  -webkit-backface-visibility: hidden !important;
-  backface-visibility: hidden !important;
-  display: flex !important;
-  align-items: center !important;
-  padding: 8px 20px !important;
-  overflow: visible !important;
-}
-
-/* Ensure any children inside header fit and don't cause extra space */
-header *, .navbar *, nav * {
-  box-sizing: border-box !important;
-}
-
-/* Force the rest of the page to start beneath the navbar.
-   Important: use padding on the page root, not margin on content elements.
-*/
-body > .app, body > #root, body > main, .content, .page, .app-content {
-  padding-top: calc(var(--navbar-height) + 12px) !important;
-  margin-top: 0 !important;
-}
-
-/* If your main content uses a specific container */
-.container, .main-container, .content, #content, .page-content {
-  padding-top: calc(var(--navbar-height) + 12px) !important;
-}
-
-/* Provide a fallback when specific container exists with margin-top */
-.container > .row, .main-container > .row {
-  margin-top: 0 !important;
-}
-
-/* Specific styling for the nav bar contents (lightweight defaults) */
-.nav-left, .nav-center, .nav-right, .navbar .left, .navbar .right {
-  display: flex !important;
-  align-items: center !important;
-  gap: 12px !important;
-}
-
-/* Keep navbar links visible */
-.nav-link, .navbar a, .site-header a, .main-nav a {
-  color: #333 !important;
-  text-decoration: none !important;
-}
-
-/* If a framework added top margins or padding to the first section, remove it */
-section, .section, .page-section, #browseSection {
-  margin-top: 0 !important;
-  padding-top: 0 !important;
-}
-
-/* =========================
-   Filter panel (sticky under navbar)
-   ========================= */
-.filter-panel, .filters, .sidebar, .left-panel {
-  position: -webkit-sticky !important;
-  position: sticky !important;
-  top: calc(var(--navbar-height) + 12px) !important;
-  align-self: flex-start !important;
-  z-index: 100 !important;
-}
-
-/* =========================
-   Inventory / product listing container
-   ========================= */
-.browse-layout-container, .inventory-wrapper, .product-layout {
-  display: flex !important;
-  gap: 25px !important;
-  align-items: flex-start !important;
-}
-
-/* make sure product-listing sits flush under the navbar */
-.product-listing, .inventory, .product-grid, .inventory-grid, .product-list {
-  padding-top: 0 !important;
-  margin-top: 0 !important;
-}
-
-/* Grid cards */
-.inventory-grid, .product-grid {
-  display: grid !important;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)) !important;
-  gap: 20px !important;
-}
-
-/* card visuals */
-.inventory-card, .product-card, .card {
-  background: #fff !important;
-  border-radius: 12px !important;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important;
-  overflow: hidden !important;
-}
-
-/* image sizing */
-.inventory-image, .product-image, .card-image, img.card-img {
-  width: 100% !important;
-  height: 180px !important;
-  object-fit: cover !important;
-}
-
-/* filter/form inputs */
-.form-group input, .form-group select, .form-group textarea, input, select, textarea {
-  border-radius: 6px !important;
-  border: 1px solid #d1d5db !important;
-  padding: 10px !important;
-  font-size: 14px !important;
-  box-sizing: border-box !important;
-}
-
-/* buttons */
-.btn, .btn-primary, button {
-  cursor: pointer !important;
-}
-
-/* add-to-cart fix */
-.add-to-cart-section {
-  display: flex !important;
-  gap: 10px !important;
-  align-items: center !important;
-  padding-top: 12px !important;
-  border-top: 1px solid #eee !important;
-}
-
-/* =========================
-   Responsive adjustments
-   ========================= */
-@media (max-width: 1024px) {
-  :root { --navbar-height: 80px; }
-  .browse-layout-container, .product-layout {
-    flex-direction: column !important;
-  }
-  .filter-panel, .left-panel {
-    position: static !important;
-    top: auto !important;
-    width: 100% !important;
-    margin-bottom: 18px !important;
-  }
-  .inventory-grid {
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)) !important;
-  }
-  /* keep body padding consistent */
-  body > .app, .content, .container {
-    padding-top: calc(var(--navbar-height) + 18px) !important;
-  }
-}
-
-@media (max-width: 768px) {
-  :root { --navbar-height: 96px; }
-  header, .navbar, nav, .top-nav {
-    height: auto !important;
-    padding: 10px 12px !important;
-    flex-wrap: wrap !important;
-  }
-  body > .app, .content, .container {
-    padding-top: calc(var(--navbar-height) + 22px) !important;
-  }
-}
-
-/* =========================
-   Extra safeguards - prevent other CSS from introducing top gap
-   ========================= */
-*[style*="margin-top:"] {
-  margin-top: 0 !important;
-}
-*[style*="padding-top:"] {
-  padding-top: 0 !important;
-}
-
-/* If you're still seeing white gap: the element causing it commonly is a div directly after header.
-   This rule forces the first child after header to have no extra spacing.
-*/
-header + *:not(.sr-only), .navbar + *:not(.sr-only), .site-header + *:not(.sr-only) {
-  margin-top: 0 !important;
-  padding-top: 0 !important;
-}
-
-/* =========================
-   Notes to developer (not parsed by browser)
-   - If the nav still disappears, inspect the navbar element in DevTools:
-     1) See computed 'position' and 'transform' values.
-     2) If a parent has 'transform' set, it can create stacking context issues.
-        The translateZ(0) above helps; if the parent has transform, remove it or
-        add transform:none !important to the parent.
-   - Ensure this file is loaded last. If you use CSS modules, add this as a normal CSS import at app root.
-   ========================= */

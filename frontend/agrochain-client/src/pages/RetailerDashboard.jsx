@@ -9,7 +9,7 @@ import { initializeCart, addToCart, removeFromCart, clearCart } from '../redux/s
 // --- RetailerNavbar Component ---
 const RetailerNavbar = ({ user, cartCount, onSignout, onNavigate, activeSection }) => {
     const [dropdownOpen, setDropdownOpen] = useState(false);
-
+///////////////////////////////////////
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (dropdownOpen && !event.target.closest('.profile-dropdown')) {
@@ -24,7 +24,7 @@ const RetailerNavbar = ({ user, cartCount, onSignout, onNavigate, activeSection 
         onNavigate(section);
         setDropdownOpen(false);
     };
-
+/////////////////////////////////
     return (
         <nav className="navbar">
             <div className="nav-left">
@@ -120,7 +120,7 @@ const RetailerDashboard = () => {
             setLoading(false);
         }
     }, [user]);
-
+/////////////////////////////////////////
     useEffect(() => {
         loadAllData();
     }, [user, loadAllData]);
@@ -128,7 +128,7 @@ const RetailerDashboard = () => {
     useEffect(() => {
         dispatch(initializeCart('retailer'));
     }, [dispatch]);
-
+///////////////////////////////////////////
     // --- Handlers ---
     const handleSignout = () => {
         if (window.confirm("Are you sure you want to sign out?")) {
@@ -147,7 +147,7 @@ const RetailerDashboard = () => {
         const { id, value } = e.target;
         setFilters(prev => ({ ...prev, [id]: value }));
     };
-
+/////////////////////////////...............................//////////////
     const getFilteredInventory = () => {
         return allInventory.filter(item => {
             const { filterType, filterName, filterPrice } = filters;
@@ -157,7 +157,7 @@ const RetailerDashboard = () => {
             return nameMatch && priceMatch && typeMatch;
         });
     };
-
+////////////////////////////////////////////////////////
     // --- Cart Logic ---
     const handleQtyChange = (itemId, value) => {
         const item = allInventory.find(i => i._id === itemId);
@@ -266,7 +266,7 @@ const RetailerDashboard = () => {
         setSelectedOrder(null);
         setSelectedProduct(null);
     };
-
+//////////////////////////////////
     // Payment & Review Handlers...
     const handlePaymentQtyChange = (productId, newQuantity) => {
         const qty = parseInt(newQuantity);
@@ -291,7 +291,7 @@ const RetailerDashboard = () => {
         updatedOrder.totalAmount = updatedOrder.products.reduce((total, p) => total + (p.quantity * p.unitPrice), 0);
         setSelectedOrder(updatedOrder);
     };
-
+///////////////////////////////////
     const handleConfirmPayment = async () => {
         setLoading(true);
         try {
@@ -494,9 +494,10 @@ const RetailerDashboard = () => {
 
 // New Edit Profile Modal Component
 // New Edit Profile Modal Component
+//////////////////////////////////////
 const EditProfileModal = ({ show, onClose, profileData, onSave }) => {
     const [formData, setFormData] = useState({});
-    
+    /////////////////////////////////
     useEffect(() => {
         if (show && profileData) { // <--- Fixed (removed "QL")
             setFormData({
@@ -509,7 +510,7 @@ const EditProfileModal = ({ show, onClose, profileData, onSave }) => {
             });
         }
     }, [show, profileData]);
-
+///////////////////////////////////
     if (!show) return null;
 
     const handleChange = (e) => {
@@ -524,7 +525,7 @@ const EditProfileModal = ({ show, onClose, profileData, onSave }) => {
         }
         onSave(formData);
     };
-
+///////////////////////////////////////////
     return (
         <div className="modal" style={{display:'block', zIndex: 4000}} onClick={onClose}>
             <div className="modal-content" onClick={e => e.stopPropagation()} style={{maxWidth: '600px'}}>
@@ -585,7 +586,7 @@ const EditProfileModal = ({ show, onClose, profileData, onSave }) => {
 };
 
 // ... [Keep existing sub-components: FilterPanel, InventoryCard, CartItem, CartSummary, OrderCard, PaymentModal, ReceiptModal, ReviewModal, ViewReviewsModal] ...
-
+//////////////////////////////////
 const FilterPanel = ({ filters, onChange }) => (
     <aside className="filter-panel">
         <h3 className="filter-title">🔍 Filter Products</h3>
@@ -611,7 +612,7 @@ const FilterPanel = ({ filters, onChange }) => (
         </div>
     </aside>
 );
-
+////////////////////////////////
 const InventoryCard = ({ item, qty, onQtyChange, onAddToCart, onViewReviews }) => {
     const unitOfSale = item.unitOfSale || 'unit';
     return (
@@ -719,7 +720,7 @@ const OrderCard = ({ order, onPay, onReview, onReceipt }) => {
         </div>
     );
 };
-
+//////////////////////////////////////////
 const PaymentModal = ({ show, onClose, order, step, setStep, onQtyChange, onConfirm, paymentMethod, setPaymentMethod, loading }) => {
     if (!show) return null;
     return (
@@ -777,7 +778,7 @@ const PaymentModal = ({ show, onClose, order, step, setStep, onQtyChange, onConf
         </div>
     );
 };
-
+//////////////////////////
 const ReceiptModal = ({ show, onClose, order, user }) => {
     if (!show) return null;
     return (
@@ -821,7 +822,7 @@ const ReviewModal = ({ show, onClose, order, onSubmit, loading }) => {
     const [quality, setQuality] = useState('');
     const [comments, setComments] = useState('');
     const [rating, setRating] = useState(0);
-
+///////////////////////////////
     const handleSubmit = (e) => {
         e.preventDefault();
         if (!quality || !comments || rating === 0) {
@@ -834,7 +835,7 @@ const ReviewModal = ({ show, onClose, order, onSubmit, loading }) => {
     const handleStarClick = (value) => {
         setRating(value);
     };
-    
+//////////////////////////////
     // Reset form when modal opens
     useEffect(() => {
         if (show) {
@@ -843,7 +844,7 @@ const ReviewModal = ({ show, onClose, order, onSubmit, loading }) => {
             setRating(0);
         }
     }, [show]);
-
+//////////////////////////////////////////////
     if (!show) return null;
     return (
         <div id="reviewModal" className="modal" style={{ display: 'block' }} onClick={onClose}>
