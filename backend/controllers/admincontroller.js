@@ -400,4 +400,88 @@ exports.getActivitySummary = async (req, res) => {
   }
 };
 
+
+// ===============================
+// 5. PRODUCT MODERATION
+// ===============================
+
+exports.getAllProducts = async (req, res) => {
+  try {
+    // Fetch only farmers with their crops + basic info
+    const farmers = await User.find(
+      { role: "farmer" },
+      "firstName lastName email mobile crops"
+    );
+
+    const products = [];
+
+    farmers.forEach((farmer) => {
+      if (Array.isArray(farmer.crops)) {
+        farmer.crops.forEach((crop) => {
+          products.push({
+            cropId: crop._id,
+            varietySpecies: crop.varietySpecies,
+            productType: crop.productType,
+            harvestQuantity: crop.harvestQuantity,
+            unitOfSale: crop.unitOfSale,
+            targetPrice: crop.targetPrice,
+            imageUrl: crop.imageUrl,
+            createdAt: crop.createdAt,
+            farmer: {
+              id: farmer._id,
+              name: `${farmer.firstName} ${farmer.lastName || ""}`,
+              email: farmer.email,
+              mobile: farmer.mobile,
+            },
+          });
+        });
+      }
+    });
+
+    res.json(products);
+  } catch (err) {
+    console.error("Error fetching all products:", err);
+    res.status(500).json({ msg: "Error fetching all products" });
+  }
+};
+
+exports.adminDeleteProduct = async (req, res) => {
+  try {
+    const { farmerEmail, cropId } = req.params;
+
+    const farmer = await User.findOne({ email: farmerEmail, role: "farmer" });
+    if (!farmer) {
+      return res.status(404).json({ msg: "Farmer not found" });
+    }
+
+    const index = farmer.crops.findIndex(
+      (c) => c._id.toString() === cropId
+    );
+    if (index === -1) {
+      return res.status(404).json({ msg: "Product not found" });
+    }
+
+    const removed = farmer.crops[index];
+
+    farmer.crops.splice(index, 1);
+    await farmer.save();
+
+    // audit log
+    await createLog(
+      farmer.email,
+      "other",
+      `ADMIN ACTION: Product "${removed.varietySpecies}" (${removed.productType}) deleted for farmer ${farmer.email}`
+    );
+
+    res.json({ msg: "Product deleted successfully by admin" });
+  } catch (err) {
+    console.error("Error deleting product as admin:", err);
+    res.status(500).json({ msg: "Error deleting product" });
+  }
+};
+
+module.exports = exports;
+
+
+
 module.exports = exports;
