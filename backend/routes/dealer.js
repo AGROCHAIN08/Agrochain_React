@@ -1,4 +1,6 @@
 const express = require("express");
+const { protect } = require("../middleware/authMiddleware");
+const { authorize } = require("../middleware/roleMiddleware");
 const router = express.Router();
 const { 
   getDealerProfile, 
@@ -22,49 +24,49 @@ const {
 // ===========================
 // PROFILE ROUTES
 // ===========================
-router.get("/profile/:email", getDealerProfile);
-router.put("/profile/:email", updateDealerProfile);
+router.get("/profile/:email", protect,authorize('dealer'),getDealerProfile);
+router.put("/profile/:email", protect,authorize('dealer'),updateDealerProfile);
 
 // ===========================
 // VEHICLE MANAGEMENT ROUTES
 // ===========================
-router.post("/vehicles/:email", addVehicle);
-router.get("/vehicles/:email", getVehicles);
-router.put("/vehicles/:email/:vehicleId", updateVehicleStatus);
-router.delete("/vehicles/:email/:vehicleId", deleteVehicle);
-router.post("/vehicles/free/:email/:vehicleId", freeVehicle);
+router.post("/vehicles/:email",protect,authorize('dealer'), addVehicle);
+router.get("/vehicles/:email", protect,authorize('dealer'),getVehicles);
+router.put("/vehicles/:email/:vehicleId",protect,authorize('dealer'), updateVehicleStatus);
+router.delete("/vehicles/:email/:vehicleId",protect,authorize('dealer'), deleteVehicle);
+router.post("/vehicles/free/:email/:vehicleId",protect,authorize('dealer'), freeVehicle);
 
 // ===========================
 // PRODUCT BROWSING ROUTES
 // ===========================
-router.get("/all-products", getAllProducts);
+router.get("/all-products",protect,authorize('dealer'), getAllProducts);
 
 // ===========================
 // ORDER MANAGEMENT ROUTES (from Farmer)
 // ===========================
-router.post("/assign-vehicle", assignVehicle);
-router.get("/orders/:email", getDealerOrders);
+router.post("/assign-vehicle",protect,authorize('dealer'), assignVehicle);
+router.get("/orders/:email",protect, authorize('dealer'),getDealerOrders);
 
 // ===========================
 // REVIEW ROUTES
 // ===========================
-router.post("/submit-review", submitReview);
+router.post("/submit-review",protect,authorize('dealer'), submitReview);
 
 // ===========================
 // BIDDING ROUTES
 // ===========================
-router.post("/place-bid", placeBid);
+router.post("/place-bid", protect,authorize('dealer'),placeBid);
 
 // ===========================
 // INVENTORY MANAGEMENT ROUTES (NEW)
 // ===========================
-router.put("/inventory/update-price", updateInventoryPrice);
-router.put("/inventory/update-quantity", updateInventoryQuantity);
-router.delete("/inventory/remove", removeInventoryItem);
+router.put("/inventory/update-price",protect,authorize('dealer'), updateInventoryPrice);
+router.put("/inventory/update-quantity",protect,authorize('dealer'), updateInventoryQuantity);
+router.delete("/inventory/remove", protect,authorize('dealer'),removeInventoryItem);
 
 // ===========================
 // RETAILER ORDER ROUTES (for Dealer to see)
 // ===========================
-router.get("/retailer-orders/:email", getRetailerOrders);
+router.get("/retailer-orders/:email",protect, authorize('dealer'),getRetailerOrders);
 
 module.exports = router;

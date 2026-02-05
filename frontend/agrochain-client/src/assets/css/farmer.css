@@ -10,7 +10,7 @@
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background-color: #f9f9f9;
-  padding-top: 80px;
+  padding-top: 100px;
 }
 
 /* ===========================
@@ -250,7 +250,7 @@ body {
    =========================== */
 .content {
   max-width: 1400px;
-  margin: 0 auto;
+  margin: 20px auto 0 auto;
   padding: 30px 40px;
   width: 100%;
 }
@@ -1665,6 +1665,3 @@ form {
     margin-bottom: 20px;
   }
 }
-
-
-

@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const { protect } = require("../middleware/authMiddleware");
 const { 
   signup, 
   sendOTP, 
@@ -18,7 +19,7 @@ const {
 // ===========================
 const User = require("../models/user");
 
-router.get("/profile/:email", async (req, res) => {
+router.get("/profile/:email", protect,async (req, res) => {
   try {
     const user = await User.findOne({ email: req.params.email });
     if (!user) return res.status(404).json({ msg: "User not found" });

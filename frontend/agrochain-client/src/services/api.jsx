@@ -1,12 +1,36 @@
 import axios from 'axios';
 
-// Create an Axios instance
 const api = axios.create({
-  baseURL: 'http://localhost:3000/api', // Your backend API
+  baseURL: 'http://localhost:3000/api',
+  headers: {
+    'Content-Type': 'application/json',
+  },
 });
 
-/* Later, you can add interceptors here to automatically attach
-  authentication tokens to every request.
-*/
+// Request interceptor to add token
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem("token"); // Retrieve token
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`; // Attach Bearer token
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Response interceptor to handle expired tokens
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      localStorage.removeItem("token"); // Clear invalid token
+      window.location.href = "/login"; // Redirect to login
+    }
+    return Promise.reject(error);
+  }
+);
 
 export default api;

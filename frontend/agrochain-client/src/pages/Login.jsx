@@ -64,17 +64,23 @@ const Login = () => {
     setStatus('Verifying Google Sign-In...');
     
     try {
-      const res = await api.post('/auth/login-google', { token: credentialResponse.credential });
-      const { user, token } = res.data;
-      
-      // Update Redux state
-      dispatch(loginSuccess({ user, token })); // 👈 Redux action - success
-      
-      // Keep AuthContext for backward compatibility
-      login(user, token);
-      
-      setStatus(`Welcome back, ${user.firstName}! Redirecting...`);
+    const res = await api.post('/auth/login-google', { token: credentialResponse.credential });
+    const { user, token } = res.data;
+    
+    // CRITICAL: Save to localStorage IMMEDIATELY before doing anything else
+    localStorage.setItem("token", token);
+    localStorage.setItem("agroChainUser", JSON.stringify(user));
+    
+    // Update Context and Redux
+    login(user, token);
+    dispatch(loginSuccess({ user, token })); 
+    
+    setStatus(`Welcome back, ${user.firstName}! Redirecting...`);
+    
+    // Small delay to ensure state propagates before navigation
+    setTimeout(() => {
       redirectToRolePage(user);
+    }, 100);
     } catch (error) {
       const errorMsg = error.response?.data?.msg || 'Google login failed';
       
@@ -108,15 +114,16 @@ const Login = () => {
     setStatus('Verifying OTP...');
     
     try {
-      const response = await api.post('/auth/verify-login-otp', { email, otp });
-      const { user, token } = response.data;
-      
-      // Update Redux state
-      dispatch(loginSuccess({ user, token })); // 👈 Redux action - success
-      
-      // Keep AuthContext for backward compatibility
+      const res = await api.post('/auth/verify-login-otp', { email, otp });
+      const { user, token } = res.data;
+
+      // 1. First, update Redux
+      dispatch(loginSuccess({ user, token }));
+
+      // 2. Then, call context login to sync localStorage and state
+      // This is CRITICAL for the api.jsx interceptor to work!
       login(user, token);
-      
+
       setStatus(`Welcome back, ${user.firstName}! Redirecting...`);
       redirectToRolePage(user);
     } catch (error) {

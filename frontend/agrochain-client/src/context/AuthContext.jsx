@@ -38,16 +38,21 @@ export const AuthProvider = ({ children }) => {
   }, [dispatch, reduxUser]);
 
   // Login function to update Redux state and localStorage
+  // Login function to update Redux state and localStorage
   const login = (userData, authToken = null) => {
-    const token = authToken || localStorage.getItem("token") || "temp-token";
+    // 1. Remove "temp-token" fallback. If there's no token, the user isn't authenticated.
+    const token = authToken || localStorage.getItem("token"); 
     
-    // Update both localStorage (backward compatibility) and Redux
-    localStorage.setItem("agroChainUser", JSON.stringify(userData));
-    if (authToken) {
-      localStorage.setItem("token", authToken);
+    if (!token) {
+      console.error("Login attempted without a valid token");
+      return;
     }
     
-    // Dispatch to Redux
+    // 2. Persist to localStorage so the interceptor in api.jsx can find it
+    localStorage.setItem("agroChainUser", JSON.stringify(userData));
+    localStorage.setItem("token", token);
+    
+    // 3. Update Redux state
     dispatch(loginSuccess({ user: userData, token }));
   };
 
@@ -66,8 +71,13 @@ export const AuthProvider = ({ children }) => {
 
   // Profile update function (for dashboards)
   const updateUserProfile = (updatedData) => {
+    // Ensure the role is preserved during updates
     const updatedUser = { ...reduxUser, ...updatedData };
+    
+    // Persist the full user object including the role
     localStorage.setItem("agroChainUser", JSON.stringify(updatedUser));
+    
+    // Update Redux so ProtectedRoute sees the current data
     dispatch(updateProfile(updatedData));
   };
 

@@ -4,7 +4,7 @@ const app = require("./app");
 console.log("🚀 Starting AgroChain Server...");
 
 // Verify environment variables
-const requiredEnvVars = ['MONGO_URI', 'EMAIL_USER', 'EMAIL_PASS'];
+const requiredEnvVars = ['MONGO_URI', 'EMAIL_USER', 'EMAIL_PASS', 'JWT_SECRET'];
 const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName]);
 
 if (missingEnvVars.length > 0) {

@@ -2,6 +2,7 @@ const User = require("../models/user");
 const nodemailer = require("nodemailer");
 const crypto = require("crypto");
 const { OAuth2Client } = require('google-auth-library');
+const jwt = require("jsonwebtoken");
 
 // Initialize Google OAuth client
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -188,10 +189,17 @@ exports.verifyLoginOTP = async (req, res) => {
       return res.status(400).json({ msg: "User not found" });
     }
 
+    const token = jwt.sign(
+      { id: user._id, role: user.role, email: user.email },
+      process.env.JWT_SECRET,
+      { expiresIn: "1d" }
+    );
+
     // OTP verified successfully
     otpStore.delete(email);
     res.json({ 
       msg: "Login successful", 
+      token,
       role: user.role,
       user: {
         id: user._id,
@@ -249,7 +257,6 @@ exports.verifyGoogleToken = async (req, res) => {
 };
 
 // Verify Google token for login
-// Verify Google token for login
 exports.verifyGoogleLogin = async (req, res) => {
   try {
     const { token } = req.body;
@@ -286,8 +293,16 @@ exports.verifyGoogleLogin = async (req, res) => {
         await adminUser.save();
       }
 
+      // ✅ FIXED: Changed 'user' to 'adminUser'
+      const adminToken = jwt.sign(
+        { id: adminUser._id, role: adminUser.role, email: adminUser.email },
+        process.env.JWT_SECRET,
+        { expiresIn: "1d" }
+      );
+
       return res.json({
         msg: "Google login successful",
+        token: adminToken,
         role: "admin",
         user: {
           id: adminUser._id,
@@ -304,8 +319,16 @@ exports.verifyGoogleLogin = async (req, res) => {
       return res.status(400).json({ msg: "Email not registered. Please signup first." });
     }
 
+    // ✅ FIXED: Added token generation for regular users
+    const userToken = jwt.sign(
+      { id: user._id, role: user.role, email: user.email },
+      process.env.JWT_SECRET,
+      { expiresIn: "1d" }
+    );
+
     res.json({
       msg: "Google login successful",
+      token: userToken,
       role: user.role,
       user: {
         id: user._id,

@@ -11,7 +11,7 @@ cloudinary.config({
 const storage = new CloudinaryStorage({
   cloudinary,
   params: {
-    folder: "AgroChain_Crops", // Folder name in Cloudinary
+    folder: "AgroChain_Crops", 
     allowed_formats: ["jpg", "jpeg", "png"],
   },
 });
