@@ -12,6 +12,7 @@ import DealerDashboard from './pages/DealerDashboard';
 import RetailerDashboard from './pages/RetailerDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import ProtectedRoute from './components/ProtectedRoute';
+import Error from './pages/Error'; 
 
 function App() {
   return (
@@ -45,12 +46,8 @@ function App() {
             <Route path="/admin" element={<AdminDashboard />} />
           </Route>
           
-          <Route path="*" element={
-            <div style={{ textAlign: 'center', marginTop: '100px' }}>
-              <h1>404 Not Found</h1>
-              <p>The page you are looking for does not exist.</p>
-            </div>
-          } />
+          {/* Catch-all Route for 404 Errors */}
+          <Route path="*" element={<Error />} /> 
         </Routes>
       </BrowserRouter>
     </AuthProvider>
