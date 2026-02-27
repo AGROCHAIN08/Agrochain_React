@@ -192,10 +192,11 @@ const DealerDashboard = () => {
                 setOrders(prevOrders => {
                     let hasChanges = false;
                     const updatedOrders = prevOrders.map(localOrder => {
-                        const serverOrder = serverOrders.find(so => 
-                            so._id === localOrder.serverOrderId || 
-                            (so.productId === localOrder._id && so.dealerEmail === user.email)
-                        );
+                        // FIX: Only match if the local order has been officially assigned a server ID.
+                        // This prevents new local orders from snapping to old completed orders of the same product.
+                        const serverOrder = localOrder.serverOrderId 
+                            ? serverOrders.find(so => so._id === localOrder.serverOrderId)
+                            : null;
                         
                         if (serverOrder) {
                             if (localOrder.bidStatus !== serverOrder.bidStatus || 
