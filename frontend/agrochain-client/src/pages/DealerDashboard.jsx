@@ -991,7 +991,7 @@ const FarmerModal = ({ show, onClose, farmerEmail }) => {
     useEffect(() => {
         if (show && farmerEmail) {
             setFarmer(null);
-            api.get(`/farmer/profile/${farmerEmail}`)
+            api.get(`/dealer/farmer-profile/${farmerEmail}`)
                 .then(res => setFarmer(res.data))
                 .catch(err => console.error(err));
         }

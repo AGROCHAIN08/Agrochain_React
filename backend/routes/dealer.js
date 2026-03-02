@@ -18,7 +18,8 @@ const {
   getRetailerOrders,
   updateInventoryPrice,
   updateInventoryQuantity,
-  removeInventoryItem
+  removeInventoryItem,
+  getFarmerProfileForDealer
 } = require("../controllers/dealercontroller");
 
 // ===========================
@@ -68,5 +69,10 @@ router.delete("/inventory/remove", protect,authorize('dealer'),removeInventoryIt
 // RETAILER ORDER ROUTES (for Dealer to see)
 // ===========================
 router.get("/retailer-orders/:email",protect, authorize('dealer'),getRetailerOrders);
+
+// ===========================
+// FARMER PROFILE ROUTE (for Dealer to view Farmer details)
+// ===========================
+router.get("/farmer-profile/:farmerEmail", protect, authorize('dealer'), getFarmerProfileForDealer);
 
 module.exports = router;
