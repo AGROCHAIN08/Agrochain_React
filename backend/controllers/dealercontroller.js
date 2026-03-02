@@ -32,6 +32,24 @@ exports.updateDealerProfile = async (req, res) => {
   }
 };
 
+// Add this near your other profile functions in dealercontroller.js
+
+exports.getFarmerProfileForDealer = async (req, res, next) => {
+  try {
+    const { farmerEmail } = req.params;
+    
+    const farmer = await User.findOne({ email: farmerEmail, role: "farmer" })
+      // Select only the fields the dealer needs to see (security best practice)
+      .select('firstName lastName email mobile farmLocation'); 
+
+    if (!farmer) return res.status(404).json({ msg: "Farmer not found" });
+    
+    res.json(farmer);
+  } catch (err) {
+    next(err);
+  }
+};
+
 // ===========================
 // VEHICLE MANAGEMENT
 // ===========================
