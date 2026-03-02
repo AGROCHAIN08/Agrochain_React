@@ -184,35 +184,31 @@ const DealerDashboard = () => {
     useEffect(() => { dispatch(initializeCart('dealer')); }, [dispatch]);
     useEffect(() => { localStorage.setItem("dealerOrders", JSON.stringify(orders)); }, [orders]);
 
-    // --- POLLING LOGIC ---
+    // --- UPDATED POLLING LOGIC (DYNAMIC STATS FIX) ---
     useEffect(() => {
         if (!user) return;
         
         const fetchUpdates = async () => {
              try {
-                // 1. Fetch Orders (Sync Status)
+                // Fetch Orders (Purchases)
                 const resOrders = await api.get(`/dealer/orders/${user.email}`);
                 const serverOrders = resOrders.data;
                 
                 setOrders(prevOrders => {
+                    const newOrders = [...prevOrders];
                     let hasChanges = false;
-                    const updatedOrders = prevOrders.map(localOrder => {
-                        const serverOrder = localOrder.serverOrderId 
-                            ? serverOrders.find(so => so._id === localOrder.serverOrderId)
-                            : null;
+                    
+                    serverOrders.forEach(serverOrder => {
+                        const existingIndex = newOrders.findIndex(o => o.serverOrderId === serverOrder._id);
                         
-                        if (serverOrder) {
+                        if (existingIndex >= 0) {
+                            const localOrder = newOrders[existingIndex];
                             if (localOrder.bidStatus !== serverOrder.bidStatus || 
                                 localOrder.status !== serverOrder.status ||
                                 localOrder.receiptNumber !== serverOrder.receiptNumber) {
                                 hasChanges = true;
-                                if (serverOrder.bidStatus === 'Accepted' && localOrder.bidStatus !== 'Accepted') {
-                                    loadAllData(); // Refresh inventory if bid accepted
-                                }
-                                return {
+                                newOrders[existingIndex] = {
                                     ...localOrder,
-                                    serverOrderId: serverOrder._id,
-                                    serverDataSynced: true,
                                     bidStatus: serverOrder.bidStatus,
                                     status: serverOrder.status,
                                     receiptNumber: serverOrder.receiptNumber,
@@ -223,16 +219,56 @@ const DealerDashboard = () => {
                                     bidPrice: serverOrder.bidPrice
                                 };
                             }
+                        } else {
+                            hasChanges = true;
+                            newOrders.push({
+                                _id: serverOrder.productId, 
+                                orderId: serverOrder._id, 
+                                serverOrderId: serverOrder._id,
+                                serverDataSynced: true,
+                                bidStatus: serverOrder.bidStatus,
+                                status: serverOrder.status,
+                                receiptNumber: serverOrder.receiptNumber,
+                                receiptDate: serverOrder.receiptGeneratedAt,
+                                farmerName: serverOrder.farmerDetails?.firstName ? (serverOrder.farmerDetails.firstName + ' ' + (serverOrder.farmerDetails.lastName || '')) : 'Unknown Farmer',
+                                farmerEmail: serverOrder.farmerEmail,
+                                farmerMobile: serverOrder.farmerDetails?.mobile,
+                                totalAmount: serverOrder.totalAmount,
+                                bidPrice: serverOrder.bidPrice,
+                                targetPrice: serverOrder.originalPrice || serverOrder.productDetails?.targetPrice,
+                                quantity: serverOrder.quantity,
+                                unitOfSale: serverOrder.productDetails?.unitOfSale || 'kg',
+                                varietySpecies: serverOrder.productDetails?.varietySpecies || 'Unknown Product',
+                                productType: serverOrder.productDetails?.productType || '',
+                                imageUrl: serverOrder.productDetails?.imageUrl || '',
+                                vehicleAssigned: !!serverOrder.vehicleId,
+                                bidPlaced: serverOrder.status !== 'Vehicle Assigned',
+                            });
                         }
-                        return localOrder;
                     });
-                    return hasChanges ? updatedOrders : prevOrders;
+
+                    return hasChanges ? newOrders : prevOrders;
                 });
 
-                // 2. Fetch Products (Dynamic Loading)
-                const resProducts = await api.get('/dealer/all-products');
-                // Update state to reflect any new products added by farmers in real-time
+                // Fetch other dynamic data to ensure ALL stats and inventory update in real-time
+                const [resProducts, resProfile, resRetailerOrders] = await Promise.all([
+                    api.get('/dealer/all-products'),
+                    api.get(`/dealer/profile/${user.email}`),
+                    api.get(`/dealer/retailer-orders/${user.email}`)
+                ]);
+
+                // Update dynamic state arrays
                 setAllProducts(resProducts.data);
+                
+                // If profile inventory changed, update it (checks length or a simple stringify comparison to avoid useless re-renders)
+                if (JSON.stringify(resProfile.data.inventory || []) !== JSON.stringify(inventory)) {
+                    setInventory(resProfile.data.inventory || []);
+                }
+                
+                // If retailer orders (Sales) changed, update them to drive the Revenue Stats
+                if (JSON.stringify(resRetailerOrders.data) !== JSON.stringify(retailerOrders)) {
+                    setRetailerOrders(resRetailerOrders.data);
+                }
 
              } catch(e) { console.error("Polling error:", e); }
         };
@@ -241,25 +277,31 @@ const DealerDashboard = () => {
         fetchUpdates(); 
 
         return () => clearInterval(interval);
-    }, [user, loadAllData]);
+    }, [user, inventory, retailerOrders]); // Add dependencies to accurately compare in the polling loop
 
     // --- Stats Calculation Logic ---
     const calculateStats = () => {
         let totalExpenditure = 0;
         let totalRevenue = 0;
         
-        const productStats = {}; // Tracks specific details for each product
+        const productStats = {}; 
+
+        const normalizeName = (name) => {
+            if (!name) return 'Unknown Product';
+            return name.trim();
+        };
 
         // Calculate Farmer Orders (Purchases / Expenditure)
         orders.forEach(o => {
-            if (o.bidStatus === 'Accepted' || o.status === 'Completed' || o.status === 'Delivered') {
-                const amount = o.totalAmount || (o.quantity * (o.bidPrice || o.targetPrice || 0));
+            if (o.bidStatus === 'Accepted' || o.status === 'Completed' || o.status === 'Delivered' || o.receiptNumber) {
+                const amount = parseFloat(o.totalAmount) || (parseFloat(o.quantity) * parseFloat(o.bidPrice || o.targetPrice || 0));
                 totalExpenditure += amount;
                 
-                const name = o.varietySpecies || 'Unknown Product';
+                const name = normalizeName(o.varietySpecies || o.productDetails?.varietySpecies || o.productName);
+                
                 if (!productStats[name]) productStats[name] = { boughtQty: 0, boughtCost: 0, soldQty: 0, soldRevenue: 0 };
                 
-                productStats[name].boughtQty += (o.quantity || 0);
+                productStats[name].boughtQty += parseFloat(o.quantity || 0);
                 productStats[name].boughtCost += amount;
             }
         });
@@ -267,13 +309,14 @@ const DealerDashboard = () => {
         // Calculate Retailer Orders (Sales / Revenue)
         retailerOrders.forEach(ro => {
             ro.products?.forEach(p => {
-                const amount = (p.quantity || 0) * (p.unitPrice || 0);
+                const amount = parseFloat(p.quantity || 0) * parseFloat(p.unitPrice || 0);
                 totalRevenue += amount;
                 
-                const name = p.productName || 'Unknown Product';
+                const name = normalizeName(p.productName || p.varietySpecies);
+                
                 if (!productStats[name]) productStats[name] = { boughtQty: 0, boughtCost: 0, soldQty: 0, soldRevenue: 0 };
                 
-                productStats[name].soldQty += (p.quantity || 0);
+                productStats[name].soldQty += parseFloat(p.quantity || 0);
                 productStats[name].soldRevenue += amount;
             });
         });
@@ -292,7 +335,7 @@ const DealerDashboard = () => {
                 avgBuy,
                 avgSell
             };
-        }).sort((a, b) => b.profit - a.profit); // Sort highest profit first
+        }).sort((a, b) => b.profit - a.profit); 
 
         // Determine Most Bought/Sold
         let mostBought = { name: 'N/A', qty: 0 };
@@ -580,7 +623,7 @@ const DealerDashboard = () => {
                         <div className="orders-grid">
                             {orders.length === 0 ? <div className="empty-state"><h3>No orders yet.</h3></div> :
                             orders.map(order => (
-                                <FarmerOrderCard key={order.orderId} item={order} onAssignVehicle={openModal} onPlaceBid={openModal} onViewReceipt={openModal} />
+                                <FarmerOrderCard key={order.orderId || order._id} item={order} onAssignVehicle={openModal} onPlaceBid={openModal} onViewReceipt={openModal} />
                             ))}
                         </div>
                     </section>
@@ -871,7 +914,6 @@ const ProductCard = ({ product, onAddToCart, qty, onQtyChange, onViewFarmer, onV
             <h3>{product.varietySpecies}</h3>
             <p className="price">₹{product.targetPrice} <small>/ {product.unitOfSale}</small></p>
 
-            {/* Row 1: View Farmer + Quality Report (same line) */}
             <div className="card-action-row info-row">
                 <button className="btn-view-farmer" onClick={() => onViewFarmer('farmer', product)}>
                     👨‍🌾 View Farmer
@@ -883,7 +925,6 @@ const ProductCard = ({ product, onAddToCart, qty, onQtyChange, onViewFarmer, onV
                 )}
             </div>
 
-            {/* Row 2: Qty + Add to Cart */}
             <div className="card-action-row cart-row">
                 <input
                     type="number"
@@ -1091,7 +1132,7 @@ const FarmerOrderCard = ({ item, onAssignVehicle, onPlaceBid, onViewReceipt }) =
         );
     }
 
-    const orderDate = item.orderId.includes('-') 
+    const orderDate = (item.orderId && item.orderId.includes('-'))
         ? new Date(parseInt(item.orderId.split('-')[1])).toLocaleDateString() 
         : 'Recent';
 
