@@ -13,6 +13,7 @@ const DealerNavbar = ({ user, cartCount, onSignout, onNavigate, activeSection })
 
     const handleNav = (section) => {
         onNavigate(section);
+        setProfileOpen(false);
         setMobileMenuOpen(false);
     };
 
@@ -65,6 +66,7 @@ const DealerNavbar = ({ user, cartCount, onSignout, onNavigate, activeSection })
                         </button>
                         <div className={`profile-menu ${profileOpen ? 'show' : ''}`}>
                             <button onClick={() => handleNav('profile')}>👤 My Profile</button>
+                            <button onClick={() => handleNav('stats')}>📊 My Stats</button>
                             <div className="dropdown-divider"></div>
                             <button className="logout-item" onClick={onSignout}>🚪 Sign Out</button>
                         </div>
@@ -97,8 +99,12 @@ const DealerNavbar = ({ user, cartCount, onSignout, onNavigate, activeSection })
                 <button onClick={() => handleNav('cart')} className={activeSection === 'cart' ? 'active' : ''}>
                     🛒 My Cart ({cartCount})
                 </button>
+                <div style={{borderTop: '1px solid #eee', margin: '10px 0'}}></div>
                 <button onClick={() => handleNav('profile')} className={activeSection === 'profile' ? 'active' : ''}>
                     👤 My Profile
+                </button>
+                <button onClick={() => handleNav('stats')} className={activeSection === 'stats' ? 'active' : ''}>
+                    📊 My Stats
                 </button>
                 <button className="logout-item" onClick={onSignout}>
                     🚪 Sign Out
@@ -137,7 +143,7 @@ const DealerDashboard = () => {
         assignVehicle: false, 
         bid: false, 
         receipt: false, 
-        viewReviews: false, // Used in inventory for Retailer reviews
+        viewReviews: false, 
         qualityReport: false, 
         editProfile: false,
         retailerReceipt: false 
@@ -178,35 +184,31 @@ const DealerDashboard = () => {
     useEffect(() => { dispatch(initializeCart('dealer')); }, [dispatch]);
     useEffect(() => { localStorage.setItem("dealerOrders", JSON.stringify(orders)); }, [orders]);
 
-    // --- UPDATED POLLING LOGIC (PRODUCTS + ORDERS) ---
+    // --- UPDATED POLLING LOGIC (DYNAMIC STATS FIX) ---
     useEffect(() => {
         if (!user) return;
         
         const fetchUpdates = async () => {
              try {
-                // 1. Fetch Orders (Sync Status)
+                // Fetch Orders (Purchases)
                 const resOrders = await api.get(`/dealer/orders/${user.email}`);
                 const serverOrders = resOrders.data;
                 
                 setOrders(prevOrders => {
+                    const newOrders = [...prevOrders];
                     let hasChanges = false;
-                    const updatedOrders = prevOrders.map(localOrder => {
-                        const serverOrder = localOrder.serverOrderId 
-                            ? serverOrders.find(so => so._id === localOrder.serverOrderId)
-                            : null;
+                    
+                    serverOrders.forEach(serverOrder => {
+                        const existingIndex = newOrders.findIndex(o => o.serverOrderId === serverOrder._id);
                         
-                        if (serverOrder) {
+                        if (existingIndex >= 0) {
+                            const localOrder = newOrders[existingIndex];
                             if (localOrder.bidStatus !== serverOrder.bidStatus || 
                                 localOrder.status !== serverOrder.status ||
                                 localOrder.receiptNumber !== serverOrder.receiptNumber) {
                                 hasChanges = true;
-                                if (serverOrder.bidStatus === 'Accepted' && localOrder.bidStatus !== 'Accepted') {
-                                    loadAllData(); // Refresh inventory if bid accepted
-                                }
-                                return {
+                                newOrders[existingIndex] = {
                                     ...localOrder,
-                                    serverOrderId: serverOrder._id,
-                                    serverDataSynced: true,
                                     bidStatus: serverOrder.bidStatus,
                                     status: serverOrder.status,
                                     receiptNumber: serverOrder.receiptNumber,
@@ -217,25 +219,146 @@ const DealerDashboard = () => {
                                     bidPrice: serverOrder.bidPrice
                                 };
                             }
+                        } else {
+                            hasChanges = true;
+                            newOrders.push({
+                                _id: serverOrder.productId, 
+                                orderId: serverOrder._id, 
+                                serverOrderId: serverOrder._id,
+                                serverDataSynced: true,
+                                bidStatus: serverOrder.bidStatus,
+                                status: serverOrder.status,
+                                receiptNumber: serverOrder.receiptNumber,
+                                receiptDate: serverOrder.receiptGeneratedAt,
+                                farmerName: serverOrder.farmerDetails?.firstName ? (serverOrder.farmerDetails.firstName + ' ' + (serverOrder.farmerDetails.lastName || '')) : 'Unknown Farmer',
+                                farmerEmail: serverOrder.farmerEmail,
+                                farmerMobile: serverOrder.farmerDetails?.mobile,
+                                totalAmount: serverOrder.totalAmount,
+                                bidPrice: serverOrder.bidPrice,
+                                targetPrice: serverOrder.originalPrice || serverOrder.productDetails?.targetPrice,
+                                quantity: serverOrder.quantity,
+                                unitOfSale: serverOrder.productDetails?.unitOfSale || 'kg',
+                                varietySpecies: serverOrder.productDetails?.varietySpecies || 'Unknown Product',
+                                productType: serverOrder.productDetails?.productType || '',
+                                imageUrl: serverOrder.productDetails?.imageUrl || '',
+                                vehicleAssigned: !!serverOrder.vehicleId,
+                                bidPlaced: serverOrder.status !== 'Vehicle Assigned',
+                            });
                         }
-                        return localOrder;
                     });
-                    return hasChanges ? updatedOrders : prevOrders;
+
+                    return hasChanges ? newOrders : prevOrders;
                 });
 
-                // 2. Fetch Products (Dynamic Loading)
-                const resProducts = await api.get('/dealer/all-products');
-                // Update state to reflect any new products added by farmers in real-time
+                // Fetch other dynamic data to ensure ALL stats and inventory update in real-time
+                const [resProducts, resProfile, resRetailerOrders] = await Promise.all([
+                    api.get('/dealer/all-products'),
+                    api.get(`/dealer/profile/${user.email}`),
+                    api.get(`/dealer/retailer-orders/${user.email}`)
+                ]);
+
+                // Update dynamic state arrays
                 setAllProducts(resProducts.data);
+                
+                // If profile inventory changed, update it (checks length or a simple stringify comparison to avoid useless re-renders)
+                if (JSON.stringify(resProfile.data.inventory || []) !== JSON.stringify(inventory)) {
+                    setInventory(resProfile.data.inventory || []);
+                }
+                
+                // If retailer orders (Sales) changed, update them to drive the Revenue Stats
+                if (JSON.stringify(resRetailerOrders.data) !== JSON.stringify(retailerOrders)) {
+                    setRetailerOrders(resRetailerOrders.data);
+                }
 
              } catch(e) { console.error("Polling error:", e); }
         };
 
         const interval = setInterval(fetchUpdates, 5000); // Poll every 5 seconds
-        fetchUpdates(); // Initial call
+        fetchUpdates(); 
 
         return () => clearInterval(interval);
-    }, [user, loadAllData]);
+    }, [user, inventory, retailerOrders]); // Add dependencies to accurately compare in the polling loop
+
+    // --- Stats Calculation Logic ---
+    const calculateStats = () => {
+        let totalExpenditure = 0;
+        let totalRevenue = 0;
+        
+        const productStats = {}; 
+
+        const normalizeName = (name) => {
+            if (!name) return 'Unknown Product';
+            return name.trim();
+        };
+
+        // Calculate Farmer Orders (Purchases / Expenditure)
+        orders.forEach(o => {
+            if (o.bidStatus === 'Accepted' || o.status === 'Completed' || o.status === 'Delivered' || o.receiptNumber) {
+                const amount = parseFloat(o.totalAmount) || (parseFloat(o.quantity) * parseFloat(o.bidPrice || o.targetPrice || 0));
+                totalExpenditure += amount;
+                
+                const name = normalizeName(o.varietySpecies || o.productDetails?.varietySpecies || o.productName);
+                
+                if (!productStats[name]) productStats[name] = { boughtQty: 0, boughtCost: 0, soldQty: 0, soldRevenue: 0 };
+                
+                productStats[name].boughtQty += parseFloat(o.quantity || 0);
+                productStats[name].boughtCost += amount;
+            }
+        });
+        
+        // Calculate Retailer Orders (Sales / Revenue)
+        retailerOrders.forEach(ro => {
+            ro.products?.forEach(p => {
+                const amount = parseFloat(p.quantity || 0) * parseFloat(p.unitPrice || 0);
+                totalRevenue += amount;
+                
+                const name = normalizeName(p.productName || p.varietySpecies);
+                
+                if (!productStats[name]) productStats[name] = { boughtQty: 0, boughtCost: 0, soldQty: 0, soldRevenue: 0 };
+                
+                productStats[name].soldQty += parseFloat(p.quantity || 0);
+                productStats[name].soldRevenue += amount;
+            });
+        });
+
+        // Convert tracking object to an array to display in table
+        const detailedStats = Object.keys(productStats).map(name => {
+            const data = productStats[name];
+            const profit = data.soldRevenue - data.boughtCost;
+            const avgBuy = data.boughtQty > 0 ? (data.boughtCost / data.boughtQty) : 0;
+            const avgSell = data.soldQty > 0 ? (data.soldRevenue / data.soldQty) : 0;
+            
+            return {
+                name,
+                ...data,
+                profit,
+                avgBuy,
+                avgSell
+            };
+        }).sort((a, b) => b.profit - a.profit); 
+
+        // Determine Most Bought/Sold
+        let mostBought = { name: 'N/A', qty: 0 };
+        let mostSold = { name: 'N/A', qty: 0 };
+
+        detailedStats.forEach(stat => {
+            if (stat.boughtQty > mostBought.qty) mostBought = { name: stat.name, qty: stat.boughtQty };
+            if (stat.soldQty > mostSold.qty) mostSold = { name: stat.name, qty: stat.soldQty };
+        });
+
+        return {
+            totalExpenditure,
+            totalRevenue,
+            profit: totalRevenue - totalExpenditure,
+            mostBought,
+            mostSold,
+            totalFarmerOrders: orders.length,
+            totalRetailerOrders: retailerOrders.length,
+            detailedStats
+        };
+    };
+
+    const stats = calculateStats();
 
     // --- Actions ---
     const handleNavigate = (section) => {
@@ -390,22 +513,11 @@ const DealerDashboard = () => {
     // --- UPDATED INVENTORY QUANTITY CHANGE HANDLER ---
     const handleInventoryQuantityChange = async (item) => {
          const qtyStr = prompt(`Current Quantity: ${item.quantity}\nEnter New Quantity (Must be less than current):`, item.quantity);
-         
-         if (qtyStr === null) return; // User cancelled
-
+         if (qtyStr === null) return; 
          const newQty = parseFloat(qtyStr);
-         
-         if (isNaN(newQty) || newQty < 0) {
-             alert("Please enter a valid number.");
-             return;
-         }
-
-         if (newQty > item.quantity) {
-             alert("You can only reduce the quantity, not increase it.");
-             return;
-         }
-
-         if (newQty === item.quantity) return; // No change
+         if (isNaN(newQty) || newQty < 0) return alert("Please enter a valid number.");
+         if (newQty > item.quantity) return alert("You can only reduce the quantity, not increase it.");
+         if (newQty === item.quantity) return; 
 
          try {
             await api.put('/dealer/inventory/update-quantity', { dealerEmail: user.email, inventoryId: item._id, newQuantity: newQty });
@@ -511,7 +623,7 @@ const DealerDashboard = () => {
                         <div className="orders-grid">
                             {orders.length === 0 ? <div className="empty-state"><h3>No orders yet.</h3></div> :
                             orders.map(order => (
-                                <FarmerOrderCard key={order.orderId} item={order} onAssignVehicle={openModal} onPlaceBid={openModal} onViewReceipt={openModal} />
+                                <FarmerOrderCard key={order.orderId || order._id} item={order} onAssignVehicle={openModal} onPlaceBid={openModal} onViewReceipt={openModal} />
                             ))}
                         </div>
                     </section>
@@ -583,6 +695,105 @@ const DealerDashboard = () => {
                         </div>
                      </section>
 
+                    {/* STATS SECTION */}
+                    <section className={activeSection === 'stats' ? 'active-section' : 'hidden-section'}>
+                        <div className="section-header">
+                            <h2>📊 Business Analytics</h2>
+                            <p style={{color: '#6b7280', fontSize: '0.9rem', marginTop: '5px'}}>Comprehensive breakdown of your trading performance.</p>
+                        </div>
+                        
+                        {/* Summary Cards Row */}
+                        <div style={{
+                            display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', padding: '10px 0 30px 0'
+                        }}>
+                            <div style={statCardStyle}>
+                                <div style={{...iconWrapperStyle, background: '#d1fae5', color: '#059669'}}>💰</div>
+                                <div style={statContentStyle}>
+                                    <span style={statLabelStyle}>Gross Revenue</span>
+                                    <h3 style={statValueStyle}>₹{stats.totalRevenue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</h3>
+                                </div>
+                            </div>
+
+                            <div style={statCardStyle}>
+                                <div style={{...iconWrapperStyle, background: '#fee2e2', color: '#dc2626'}}>💸</div>
+                                <div style={statContentStyle}>
+                                    <span style={statLabelStyle}>Total Procurements</span>
+                                    <h3 style={statValueStyle}>₹{stats.totalExpenditure.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</h3>
+                                </div>
+                            </div>
+
+                            <div style={statCardStyle}>
+                                <div style={{...iconWrapperStyle, background: stats.profit >= 0 ? '#dbeafe' : '#fef3c7', color: stats.profit >= 0 ? '#2563eb' : '#d97706'}}>📈</div>
+                                <div style={statContentStyle}>
+                                    <span style={statLabelStyle}>Net Profit / Loss</span>
+                                    <h3 style={{...statValueStyle, color: stats.profit >= 0 ? '#10b981' : '#ef4444'}}>
+                                        {stats.profit >= 0 ? '+' : '-'}₹{Math.abs(stats.profit).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                                    </h3>
+                                </div>
+                            </div>
+
+                            <div style={statCardStyle}>
+                                <div style={{...iconWrapperStyle, background: '#fce7f3', color: '#db2777'}}>🧾</div>
+                                <div style={statContentStyle}>
+                                    <span style={statLabelStyle}>Order Volumes</span>
+                                    <h3 style={statValueStyle}>{stats.totalFarmerOrders + stats.totalRetailerOrders}</h3>
+                                    <p style={statSubTextStyle}>{stats.totalFarmerOrders} In / {stats.totalRetailerOrders} Out</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Detailed Product Ledger Table */}
+                        <div className="detailed-stats-container" style={{
+                            background: '#fff', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)', overflow: 'hidden', border: '1px solid #e5e7eb'
+                        }}>
+                            <div style={{ padding: '20px', borderBottom: '1px solid #e5e7eb', background: '#f8fafc' }}>
+                                <h3 style={{ margin: 0, color: '#1f2937', fontSize: '1.1rem' }}>📋 Itemized Product Ledger</h3>
+                                <p style={{ margin: '5px 0 0 0', color: '#6b7280', fontSize: '0.85rem' }}>Detailed breakdown of buys, sells, and margins per product.</p>
+                            </div>
+                            
+                            <div style={{ overflowX: 'auto' }}>
+                                <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '800px' }}>
+                                    <thead>
+                                        <tr style={{ background: '#f3f4f6', textAlign: 'left' }}>
+                                            <th style={thStyle}>Product Name</th>
+                                            <th style={thStyle}>Bought Qty</th>
+                                            <th style={thStyle}>Avg Buy Price</th>
+                                            <th style={thStyle}>Total Cost</th>
+                                            <th style={thStyle}>Sold Qty</th>
+                                            <th style={thStyle}>Avg Sell Price</th>
+                                            <th style={thStyle}>Total Revenue</th>
+                                            <th style={{...thStyle, textAlign: 'right'}}>Net Margin</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {stats.detailedStats.length === 0 ? (
+                                            <tr>
+                                                <td colSpan="8" style={{ padding: '30px', textAlign: 'center', color: '#6b7280' }}>
+                                                    No financial data available yet.
+                                                </td>
+                                            </tr>
+                                        ) : (
+                                            stats.detailedStats.map((item, index) => (
+                                                <tr key={index} style={{ borderBottom: '1px solid #e5e7eb', transition: 'background 0.2s' }} onMouseOver={e => e.currentTarget.style.background = '#f9fafb'} onMouseOut={e => e.currentTarget.style.background = 'transparent'}>
+                                                    <td style={{...tdStyle, fontWeight: '600', color: '#111827'}}>{item.name}</td>
+                                                    <td style={tdStyle}>{item.boughtQty}</td>
+                                                    <td style={{...tdStyle, color: '#dc2626'}}>₹{item.avgBuy.toFixed(2)}</td>
+                                                    <td style={{...tdStyle, color: '#dc2626'}}>₹{item.boughtCost.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td>
+                                                    <td style={{...tdStyle, background: '#f0fdf4'}}>{item.soldQty}</td>
+                                                    <td style={{...tdStyle, color: '#059669', background: '#f0fdf4'}}>₹{item.avgSell.toFixed(2)}</td>
+                                                    <td style={{...tdStyle, color: '#059669', background: '#f0fdf4'}}>₹{item.soldRevenue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td>
+                                                    <td style={{...tdStyle, textAlign: 'right', fontWeight: 'bold', color: item.profit >= 0 ? '#10b981' : '#ef4444'}}>
+                                                        {item.profit >= 0 ? '+' : ''}₹{item.profit.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </section>
+
                     {/* PROFILE SECTION */}
                     <section className={activeSection === 'profile' ? 'active-section' : 'hidden-section'}>
                         <div className="profile-container">
@@ -628,6 +839,68 @@ const DealerDashboard = () => {
     );
 };
 
+// --- STYLES FOR STATS SECTION ---
+const statCardStyle = {
+    background: '#ffffff',
+    borderRadius: '12px',
+    padding: '20px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '15px',
+    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+    border: '1px solid #f3f4f6'
+};
+const iconWrapperStyle = {
+    width: '50px',
+    height: '50px',
+    borderRadius: '12px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: '24px',
+    flexShrink: 0
+};
+const statContentStyle = {
+    display: 'flex',
+    flexDirection: 'column',
+    overflow: 'hidden'
+};
+const statLabelStyle = {
+    fontSize: '0.85rem',
+    color: '#6b7280',
+    textTransform: 'uppercase',
+    letterSpacing: '0.05em',
+    fontWeight: '600',
+    marginBottom: '4px'
+};
+const statValueStyle = {
+    fontSize: '1.4rem',
+    fontWeight: '700',
+    color: '#111827',
+    margin: '0',
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis'
+};
+const statSubTextStyle = {
+    fontSize: '0.8rem',
+    color: '#9ca3af',
+    margin: '2px 0 0 0'
+};
+const thStyle = {
+    padding: '12px 16px',
+    fontSize: '0.8rem',
+    textTransform: 'uppercase',
+    letterSpacing: '0.05em',
+    color: '#4b5563',
+    borderBottom: '2px solid #e5e7eb'
+};
+const tdStyle = {
+    padding: '14px 16px',
+    fontSize: '0.9rem',
+    color: '#374151'
+};
+
 // --- SUB COMPONENTS ---
 
 const ProductCard = ({ product, onAddToCart, qty, onQtyChange, onViewFarmer, onViewQualityReport }) => (
@@ -641,7 +914,6 @@ const ProductCard = ({ product, onAddToCart, qty, onQtyChange, onViewFarmer, onV
             <h3>{product.varietySpecies}</h3>
             <p className="price">₹{product.targetPrice} <small>/ {product.unitOfSale}</small></p>
 
-            {/* Row 1: View Farmer + Quality Report (same line) */}
             <div className="card-action-row info-row">
                 <button className="btn-view-farmer" onClick={() => onViewFarmer('farmer', product)}>
                     👨‍🌾 View Farmer
@@ -653,7 +925,6 @@ const ProductCard = ({ product, onAddToCart, qty, onQtyChange, onViewFarmer, onV
                 )}
             </div>
 
-            {/* Row 2: Qty + Add to Cart */}
             <div className="card-action-row cart-row">
                 <input
                     type="number"
@@ -861,7 +1132,7 @@ const FarmerOrderCard = ({ item, onAssignVehicle, onPlaceBid, onViewReceipt }) =
         );
     }
 
-    const orderDate = item.orderId.includes('-') 
+    const orderDate = (item.orderId && item.orderId.includes('-'))
         ? new Date(parseInt(item.orderId.split('-')[1])).toLocaleDateString() 
         : 'Recent';
 
