@@ -36,6 +36,7 @@ const server = app.listen(PORT, () => {
   console.log(`📧 Email service: ${process.env.EMAIL_USER}`);
   console.log(`🌐 Frontend CORS: http://127.0.0.1:5500`);
   console.log(`📋 API Documentation: http://localhost:${PORT}/`);
+  console.log(`📖 Swagger Docs: http://localhost:${PORT}/api-docs`);
   console.log("=====================================");
 });
 
