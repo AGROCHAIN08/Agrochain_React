@@ -292,6 +292,7 @@ exports.acceptBid = async (req, res, next) => {
     order.bidStatus = "Accepted";
     order.status = "Bid Accepted";
     order.bidResponseDate = new Date();
+    order.paymentStatus = "Pending"; // Payment now required via Stripe
 
     const date = new Date();
     const receiptNumber = `RCP-${date.getFullYear()}${String(
@@ -305,67 +306,42 @@ exports.acceptBid = async (req, res, next) => {
     order.receiptNumber = receiptNumber;
     order.receiptGeneratedAt = new Date();
     
+    order.timeline.push({
+      status: 'Bid Accepted',
+      timestamp: new Date(),
+      notes: 'Farmer accepted the bid. Awaiting dealer payment via Stripe.'
+    });
+
     await order.save();
 
     const dealer = await User.findOne({
       email: order.dealerEmail,
       role: "dealer",
     });
-    const farmer = await User.findOne({
-      email: order.farmerEmail,
-      role: "farmer",
-    });
 
     if (!dealer) {
       return res.status(404).json({ msg: "Dealer not found" });
     }
 
-    const productIndex = farmer?.crops?.findIndex(
-      (c) => c._id.toString() === order.productId.toString()
-    );
-
-    if (farmer && productIndex !== -1) {
-      const product = farmer.crops[productIndex];
-      product.harvestQuantity -= order.quantity;
-
-      const inventoryItem = {
-        productId: order.productId,
-        productName: product.varietySpecies,
-        productType: product.productType,
-        quantity: order.quantity,
-        unitPrice: order.bidPrice,
-        totalValue: order.bidPrice * order.quantity,
-        farmerName: `${farmer.firstName} ${farmer.lastName || ""}`,
-        farmerEmail: farmer.email,
-        imageUrl: product.imageUrl,
-        addedDate: new Date(),
-        receiptNumber,
-      };
-
-      if (!Array.isArray(dealer.inventory)) dealer.inventory = [];
-      dealer.inventory.push(inventoryItem);
-      
-      await dealer.save();
-      await farmer.save(); 
-
-      console.log("✅ Product added to dealer inventory:", inventoryItem);
-    }
+    // NOTE: Inventory transfer is now handled by Stripe webhook
+    // after dealer completes payment. Product stays with farmer until paid.
 
     if (!dealer.notifications) dealer.notifications = [];
     dealer.notifications.push({
-      title: "Bid Accepted!",
-      message: `Farmer has accepted your bid of ₹${order.bidPrice} per unit. Receipt: ${receiptNumber}`,
+      title: "Bid Accepted — Payment Required!",
+      message: `Farmer has accepted your bid of ₹${order.bidPrice} per unit. Please complete the payment via Stripe to receive the product. Receipt: ${receiptNumber}`,
       createdAt: new Date(),
     });
     await dealer.save();
 
     res.json({
-      msg: "Bid accepted successfully",
+      msg: "Bid accepted successfully. Dealer must complete payment via Stripe.",
       receiptNumber,
+      paymentRequired: true,
     });
 
   } catch (err) {
-    next(err); // Pass error to error middleware
+    next(err);
   }
 };
 

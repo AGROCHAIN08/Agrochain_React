@@ -766,8 +766,32 @@ const FarmerDashboard = () => {
                     </div>
                   )}
                   {order.status === 'Bid Accepted' && order.receiptNumber && (
+                    <div style={{ background: '#fef3c7', border: '2px solid #f59e0b', borderRadius: '8px', padding: '15px', marginTop: '15px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <h4 style={{ marginTop: 0, color: '#d97706' }}>⌛ Awaiting Payment</h4>
+                        <span style={{ background: '#f59e0b', color: '#fff', borderRadius: '20px', padding: '4px 12px', fontSize: '12px', fontWeight: 'bold' }}>Pending</span>
+                      </div>
+                      <p style={{ margin: '5px 0' }}><strong>Final Price:</strong> ₹{order.bidPrice} per {order.productDetails?.unitOfSale}</p>
+                      <p style={{ margin: '5px 0' }}><strong>Total Amount:</strong> ₹{order.totalAmount?.toFixed(2)}</p>
+                      <p style={{ margin: '5px 0', fontSize: '13px', color: '#92400e' }}><i>Dealer must pay via Stripe. Your inventory transfers after payment clears.</i></p>
+                      <button 
+                        onClick={() => {
+                          setSelectedReceiptOrder(order);
+                          setModal({...modal, farmerReceipt: true});
+                        }} 
+                        style={{ background: '#3b82f6', color: 'white', padding: '8px 16px', border: 'none', borderRadius: '6px', cursor: 'pointer', marginTop: '10px' }}
+                      >
+                        📄 Pro-forma Receipt
+                      </button>
+                    </div>
+                  )}
+
+                  {order.status === 'Completed' && order.receiptNumber && (
                     <div style={{ background: '#d1fae5', border: '2px solid #10b981', borderRadius: '8px', padding: '15px', marginTop: '15px' }}>
-                      <h4 style={{ marginTop: 0, color: '#059669' }}>✓ Bid Accepted</h4>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                         <h4 style={{ marginTop: 0, color: '#059669' }}>✓ Payment Received</h4>
+                         <span style={{ background: '#10b981', color: '#fff', borderRadius: '20px', padding: '4px 12px', fontSize: '12px', fontWeight: 'bold' }}>Paid via Stripe</span>
+                      </div>
                       <p style={{ margin: '5px 0' }}><strong>Final Price:</strong> ₹{order.bidPrice} per {order.productDetails?.unitOfSale}</p>
                       <p style={{ margin: '5px 0' }}><strong>Total Amount:</strong> ₹{order.totalAmount?.toFixed(2)}</p>
                       <p style={{ margin: '5px 0' }}><strong>Receipt Number:</strong> {order.receiptNumber}</p>
@@ -778,7 +802,7 @@ const FarmerDashboard = () => {
                         }} 
                         style={{ background: '#3b82f6', color: 'white', padding: '8px 16px', border: 'none', borderRadius: '6px', cursor: 'pointer', marginTop: '10px' }}
                       >
-                        📄 View Receipt
+                        📄 View Final Receipt
                       </button>
                     </div>
                   )}

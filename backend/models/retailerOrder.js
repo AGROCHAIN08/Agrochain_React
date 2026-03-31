@@ -24,7 +24,9 @@ const retailerOrderSchema = new mongoose.Schema({
   
   paymentDetails: {
     status: { type: String, enum: ['Pending', 'Completed', 'Failed'], default: 'Pending' },
-    method: { type: String }
+    method: { type: String },
+    stripeSessionId: { type: String },
+    stripePaymentIntentId: { type: String }
   },
   
   orderStatus: {

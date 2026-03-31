@@ -216,7 +216,8 @@ const DealerDashboard = () => {
                                     farmerName: serverOrder.farmerDetails?.firstName + ' ' + (serverOrder.farmerDetails?.lastName || ''),
                                     farmerMobile: serverOrder.farmerDetails?.mobile,
                                     totalAmount: serverOrder.totalAmount,
-                                    bidPrice: serverOrder.bidPrice
+                                    bidPrice: serverOrder.bidPrice,
+                                    paymentStatus: serverOrder.paymentStatus
                                 };
                             }
                         } else {
@@ -243,6 +244,7 @@ const DealerDashboard = () => {
                                 imageUrl: serverOrder.productDetails?.imageUrl || '',
                                 vehicleAssigned: !!serverOrder.vehicleId,
                                 bidPlaced: serverOrder.status !== 'Vehicle Assigned',
+                                paymentStatus: serverOrder.paymentStatus,
                             });
                         }
                     });
@@ -491,6 +493,23 @@ const DealerDashboard = () => {
         } catch (err) { alert("Error placing bid"); }
     };
 
+    const handleStripePayment = async (item) => {
+        try {
+            const res = await api.post('/payment/create-checkout-session', {
+                orderType: 'farmer-dealer',
+                orderId: item.serverOrderId || item.orderId
+            });
+            if (res.data.url) {
+                window.location.href = res.data.url;
+            } else {
+                alert('Could not start payment session');
+            }
+        } catch (err) {
+            console.error("Stripe payment error:", err);
+            alert(err.response?.data?.message || err.response?.data?.msg || err.message || 'Error starting payment');
+        }
+    };
+
     const handleProfileUpdate = async (updatedData) => {
         try {
             const res = await api.put(`/dealer/profile/${user.email}`, updatedData);
@@ -623,7 +642,14 @@ const DealerDashboard = () => {
                         <div className="orders-grid">
                             {orders.length === 0 ? <div className="empty-state"><h3>No orders yet.</h3></div> :
                             orders.map(order => (
-                                <FarmerOrderCard key={order.orderId || order._id} item={order} onAssignVehicle={openModal} onPlaceBid={openModal} onViewReceipt={openModal} />
+                                <FarmerOrderCard 
+                                    key={order.orderId || order._id} 
+                                    item={order} 
+                                    onAssignVehicle={openModal} 
+                                    onPlaceBid={openModal} 
+                                    onViewReceipt={openModal} 
+                                    onPay={handleStripePayment}
+                                />
                             ))}
                         </div>
                     </section>
@@ -1101,16 +1127,31 @@ const RetailerReceiptModal = ({ show, onClose, order, dealer }) => {
     );
 };
 
-const FarmerOrderCard = ({ item, onAssignVehicle, onPlaceBid, onViewReceipt }) => {
+const FarmerOrderCard = ({ item, onAssignVehicle, onPlaceBid, onViewReceipt, onPay }) => {
     let statusBadge = null;
     let action = null;
 
-    if (item.bidStatus === 'Accepted') {
-        statusBadge = <span className="status-badge success">✓ Accepted</span>;
+    if (item.status === 'Completed' || item.paymentStatus === 'Completed') {
+        statusBadge = <span className="payment-completed-badge">✓ Paid & Received</span>;
         action = (
             <button className="btn-action primary" onClick={() => onViewReceipt('receipt', item)}>
                 📄 View Receipt
             </button>
+        );
+    } else if (item.bidStatus === 'Accepted') {
+        statusBadge = <span className="payment-awaiting-badge">⏳ Payment Pending</span>;
+        action = (
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <button 
+                    className="stripe-pay-btn" 
+                    onClick={() => onPay(item)}
+                >
+                    💳 Pay
+                </button>
+                <button className="btn-action secondary" onClick={() => onViewReceipt('receipt', item)}>
+                    Receipt
+                </button>
+            </div>
         );
     } else if (item.bidStatus === 'Rejected') {
         statusBadge = <span className="status-badge error">❌ Rejected</span>;

@@ -129,7 +129,7 @@ exports.updateOrder = async (req, res) => {
   }
 };
 
-// Finalize payment, update dealer inventory, and generate receipt
+// Finalize payment via Stripe Checkout
 exports.completePayment = async (req, res) => {
   try {
     const { orderId } = req.params;
@@ -143,38 +143,56 @@ exports.completePayment = async (req, res) => {
         return res.status(400).json({ msg: "Payment for this order has already been completed." });
     }
 
-    const dealer = await User.findOne({ email: order.dealerInfo.email, role: 'dealer' });
-    if (!dealer) {
-        return res.status(404).json({ msg: "Associated dealer not found." });
-    }
+    // Update order with latest product quantities/amounts before payment
+    if (products) order.products = products;
+    if (totalAmount) order.totalAmount = totalAmount;
+    if (paymentMethod) order.paymentDetails.method = paymentMethod;
+    await order.save();
 
-    for (const orderedProduct of products) {
-        // Correctly find the inventory item by its unique _id
-        const inventoryItem = dealer.inventory.find(item => item._id.toString() === orderedProduct.productId);
-        
-        if (inventoryItem) {
-            inventoryItem.quantity -= orderedProduct.quantity;
-            if (inventoryItem.quantity <= 0) {
-                // If stock is depleted, remove the item from inventory
-                dealer.inventory = dealer.inventory.filter(item => item._id.toString() !== orderedProduct.productId);
-            }
-        }
-    }
+    // Create Stripe Checkout Session
+    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+    
+    const lineItems = order.products.map(product => ({
+      price_data: {
+        currency: 'inr',
+        product_data: {
+          name: product.productName,
+          description: `From dealer: ${order.dealerInfo.businessName}`,
+        },
+        unit_amount: Math.round(product.unitPrice * 100), // Convert to paise
+      },
+      quantity: product.quantity,
+    }));
 
-    order.products = products;
-    order.totalAmount = totalAmount;
-    order.paymentDetails.method = paymentMethod;
-    order.paymentDetails.status = 'Completed';
-    order.orderStatus = 'Processing';
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      line_items: lineItems,
+      mode: 'payment',
+      success_url: `${process.env.FRONTEND_URL}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.FRONTEND_URL}/payment/cancel?order_id=${orderId}&order_type=dealer-retailer`,
+      customer_email: order.retailerEmail,
+      metadata: {
+        orderType: 'dealer-retailer',
+        orderId: order._id.toString(),
+        retailerEmail: order.retailerEmail,
+        dealerEmail: order.dealerInfo.email,
+      },
+    });
 
-    await dealer.save();
-    const updatedOrder = await order.save();
+    // Store session ID
+    order.paymentDetails.stripeSessionId = session.id;
+    await order.save();
 
-    res.json({ msg: "Payment completed successfully and dealer inventory updated.", order: updatedOrder });
+    res.json({ 
+      msg: "Stripe checkout session created", 
+      sessionId: session.id,
+      url: session.url,
+      publishableKey: process.env.STRIPE_PUBLISHABLE_KEY
+    });
 
   } catch (err) {
-    console.error("Error completing payment:", err);
-    res.status(500).json({ msg: "Server error while completing payment" });
+    console.error("Error creating Stripe session:", err);
+    res.status(500).json({ msg: "Server error while creating payment session" });
   }
 };
 

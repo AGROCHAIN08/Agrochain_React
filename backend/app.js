@@ -52,6 +52,10 @@ app.use(cors({
   credentials: true
 }));
 
+// Stripe webhook needs raw body for signature verification
+// This must come BEFORE express.json()
+app.use('/api/payment/webhook', express.raw({ type: 'application/json' }));
+
 app.use(express.json());
 app.use(helmet());
 
@@ -68,6 +72,7 @@ app.use("/api/dealer", require("./routes/dealer"));
 app.use("/api/retailer", require("./routes/retailer"));
 app.use("/api/admin", require("./routes/admin"));
 app.use("/api/representative", require("./routes/representative"));
+app.use("/api/payment", require("./routes/payment"));
 
 // Health check route
 app.get("/", (req, res) => {

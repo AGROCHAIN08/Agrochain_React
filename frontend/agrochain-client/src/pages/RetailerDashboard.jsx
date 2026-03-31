@@ -295,16 +295,21 @@ const RetailerDashboard = () => {
     const handleConfirmPayment = async () => {
         setLoading(true);
         try {
-            await api.post(`/retailer/orders/${selectedOrder._id}/complete-payment`, {
+            const res = await api.post(`/retailer/orders/${selectedOrder._id}/complete-payment`, {
                 products: selectedOrder.products,
                 totalAmount: selectedOrder.totalAmount,
-                paymentMethod: paymentMethod
+                paymentMethod: 'Stripe'
             });
-            alert('✅ Payment successful!');
-            closeModal('payment');
-            loadAllData();
+            
+            // Redirect to Stripe Checkout
+            if (res.data.url) {
+                window.location.href = res.data.url;
+            } else {
+                alert('❌ Error: Could not create payment session');
+            }
         } catch (err) {
-            alert(`❌ Error: ${err.response?.data?.msg || 'Payment failed'}`);
+            console.error("Stripe payment error:", err);
+            alert(`❌ Error: ${err.response?.data?.message || err.response?.data?.msg || err.message || 'Payment failed'}`);
         } finally {
             setLoading(false);
         }
@@ -762,15 +767,35 @@ const PaymentModal = ({ show, onClose, order, step, setStep, onQtyChange, onConf
                 
                 {step === 2 && (
                     <div id="paymentStep2" className="payment-step">
-                        <h3>Step 2: Select Payment Method</h3>
-                        <div className="payment-options">
-                            <label><input type="radio" name="paymentMethod" value="UPI" checked={paymentMethod === 'UPI'} onChange={(e) => setPaymentMethod(e.target.value)} /> UPI / QR Code</label>
-                            <label><input type="radio" name="paymentMethod" value="Credit/Debit Card" checked={paymentMethod === 'Credit/Debit Card'} onChange={(e) => setPaymentMethod(e.target.value)} /> Credit/Debit Card</label>
-                            <label><input type="radio" name="paymentMethod" value="Net Banking" checked={paymentMethod === 'Net Banking'} onChange={(e) => setPaymentMethod(e.target.value)} /> Net Banking</label>
+                        <h3>Step 2: Complete Payment</h3>
+                        <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '24px', marginBottom: '20px' }}>
+                                <div style={{ fontSize: '14px', color: '#64748b', marginBottom: '8px' }}>Total Amount</div>
+                                <div style={{ fontSize: '32px', fontWeight: '700', color: '#0f172a' }}>₹{order.totalAmount.toFixed(2)}</div>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '16px', color: '#64748b', fontSize: '13px' }}>
+                                <span>🔒</span> Secure payment powered by Stripe
+                            </div>
+                            <p style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '20px' }}>
+                                You will be redirected to Stripe's secure checkout page to complete your payment using Credit/Debit Card, UPI, or other methods.
+                            </p>
                         </div>
                         <div className="modal-actions">
                             <button className="btn-secondary" onClick={() => setStep(1)}>Back to Review</button>
-                            <button className="btn-primary" onClick={onConfirm} disabled={loading}>{loading ? "Processing..." : "Confirm & Proceed"}</button>
+                            <button 
+                                className="btn-primary" 
+                                onClick={onConfirm} 
+                                disabled={loading}
+                                style={{ 
+                                    background: 'linear-gradient(135deg, #635bff, #7c3aed)', 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    justifyContent: 'center', 
+                                    gap: '8px' 
+                                }}
+                            >
+                                {loading ? "Redirecting to Stripe..." : "💳 Pay with Stripe"}
+                            </button>
                         </div>
                     </div>
                 )}

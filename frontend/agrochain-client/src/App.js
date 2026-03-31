@@ -14,6 +14,8 @@ import RetailerDashboard from './pages/RetailerDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import ProtectedRoute from './components/ProtectedRoute';
 import Error from './pages/Error'; 
+import PaymentSuccess from './pages/PaymentSuccess';
+import PaymentCancel from './pages/PaymentCancel';
 
 function App() {
   return (
@@ -52,6 +54,10 @@ function App() {
             <Route path="/admin" element={<AdminDashboard />} />
           </Route>
           
+          {/* Payment Result Routes (accessible after Stripe redirect) */}
+          <Route path="/payment/success" element={<PaymentSuccess />} />
+          <Route path="/payment/cancel" element={<PaymentCancel />} />
+
           {/* Catch-all Route for 404 Errors */}
           <Route path="*" element={<Error />} /> 
         </Routes>

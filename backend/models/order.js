@@ -56,6 +56,10 @@ const orderSchema = new mongoose.Schema({
     default: 'Pending' 
   },
   
+  // Stripe payment tracking
+  stripeSessionId: { type: String },
+  stripePaymentIntentId: { type: String },
+  
   // Location tracking
   pickupLocation: {
     address: String,
