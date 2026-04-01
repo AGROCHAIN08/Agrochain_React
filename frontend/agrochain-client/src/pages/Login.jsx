@@ -79,6 +79,8 @@ const Login = () => {
     dispatch(loginStart()); // 👈 Redux action - start loading
     setLoading(true);
     setStatus('Verifying Google Sign-In...');
+
+    console.log("GOOGLE TOKEN:", credentialResponse.credential);
     
     try {
     const res = await api.post('/auth/login-google', { token: credentialResponse.credential });
