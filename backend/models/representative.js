@@ -6,7 +6,7 @@ const representativeSchema = new mongoose.Schema(
     email: {
       type: String,
       required: true,
-      unique: true,
+      unique: true, // This automatically creates an index
       lowercase: true,
       trim: true,
     },
@@ -21,5 +21,11 @@ const representativeSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+// ===========================
+// INDEXES FOR PERFORMANCE
+// ===========================
+// Speeds up queries when an Admin looks up the representatives they added
+representativeSchema.index({ addedBy: 1 });
 
 module.exports = mongoose.model("Representative", representativeSchema);

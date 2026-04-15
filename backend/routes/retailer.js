@@ -2,6 +2,9 @@ const express = require("express");
 const router = express.Router();
 const { protect } = require("../middleware/authMiddleware");
 const { authorize } = require("../middleware/roleMiddleware");
+const retailerController = require("../controllers/retailercontroller");
+const { verifyToken } = require("../middleware/authMiddleware");
+const { isRetailer } = require("../middleware/roleMiddleware");
 const { 
   getDealerInventories, 
   placeOrder, 
@@ -197,5 +200,40 @@ router.post("/submit-review",protect,authorize('retailer'), submitReview);
  *         description: Retailer not found
  */
 router.put("/profile/:email",protect,authorize('retailer'), updateRetailerProfile);
+
+/**
+ * @swagger
+ * /api/retailer/products:
+ * get:
+ * summary: Get all available products from dealers (Redis Cached)
+ * tags: [Retailer]
+ * security:
+ * - bearerAuth: []
+ * responses:
+ * 200:
+ * description: Successfully fetched available products
+ * content:
+ * application/json:
+ * schema:
+ * type: object
+ * properties:
+ * source:
+ * type: string
+ * example: "Redis Cache"
+ * success:
+ * type: boolean
+ * example: true
+ * data:
+ * type: array
+ * items:
+ * type: object
+ * 401:
+ * description: Unauthorized - Invalid or missing token
+ * 403:
+ * description: Forbidden - Not a retailer
+ * 500:
+ * description: Server error
+ */
+router.get("/products", verifyToken, isRetailer, retailerController.getAvailableProducts);
 
 module.exports = router;

@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const { protect } = require("../middleware/authMiddleware");
+const authController = require("../controllers/authcontroller");
 const { 
   signup, 
   sendOTP, 
@@ -313,5 +314,49 @@ router.post("/verify-login-otp", verifyLoginOTP);
  *         description: User not registered
  */
 router.post("/login-google", verifyGoogleLogin);
+
+/**
+ * @swagger
+ * /api/auth/login:
+ * post:
+ * summary: Authenticate user and get JWT token
+ * tags: [Auth]
+ * requestBody:
+ * required: true
+ * content:
+ * application/json:
+ * schema:
+ * type: object
+ * required:
+ * - email
+ * - password
+ * properties:
+ * email:
+ * type: string
+ * format: email
+ * example: dealer@agrochain.com
+ * password:
+ * type: string
+ * format: password
+ * example: "securepassword123"
+ * responses:
+ * 200:
+ * description: Login successful
+ * content:
+ * application/json:
+ * schema:
+ * type: object
+ * properties:
+ * token:
+ * type: string
+ * description: JWT Bearer token
+ * user:
+ * type: object
+ * 400:
+ * description: Invalid credentials
+ * 500:
+ * description: Server error
+ */
+router.post("/login", authController.login);
 
 module.exports = router;

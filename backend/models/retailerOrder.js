@@ -40,4 +40,16 @@ const retailerOrderSchema = new mongoose.Schema({
   
 }, { timestamps: true });
 
+// ===========================
+// INDEXES FOR PERFORMANCE
+// ===========================
+// Speeds up fetching a specific retailer's order history, sorted by newest
+retailerOrderSchema.index({ retailerEmail: 1, createdAt: -1 });
+
+// Speeds up fetching a specific dealer's received orders, sorted by newest
+retailerOrderSchema.index({ "dealerInfo.email": 1, createdAt: -1 });
+
+// Speeds up querying orders by their current status (e.g., finding all "Pending" orders)
+retailerOrderSchema.index({ orderStatus: 1 });
+
 module.exports = mongoose.model("RetailerOrder", retailerOrderSchema);

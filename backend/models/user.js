@@ -9,7 +9,7 @@ const userSchema = new mongoose.Schema({
   firstName: { type: String, required: true },
   lastName: { type: String },
   mobile: { type: String, required: true },
-  email: { type: String, required: true, unique: true },
+  email: { type: String, required: true, unique: true }, // 'unique' automatically creates an index
   
   // Email verification fields
   emailVerified: { type: Boolean, default: false },
@@ -192,5 +192,35 @@ const userSchema = new mongoose.Schema({
   monthlyPurchaseVolume: { type: String }
   
 }, { timestamps: true }); // Automatically add createdAt and updatedAt
+
+// ===========================
+// INDEXES FOR PERFORMANCE
+// ===========================
+userSchema.index({ role: 1 });
+userSchema.index({ "crops.verificationStatus": 1 });
+userSchema.index({ "inventory.productId": 1 });
+
+// NEW: Full-Text Search Index (The "Solr" Alternative)
+userSchema.index({
+  "firstName": "text",
+  "businessName": "text",
+  "crops.productType": "text",
+  "crops.varietySpecies": "text",
+  "inventory.productName": "text",
+  "inventory.productType": "text",
+  "farmLocation": "text"
+}, {
+  // Weights determine relevance scoring. A match on productName (weight 10) 
+  // will appear higher in search results than a match on location (weight 2).
+  weights: {
+    "inventory.productName": 10,
+    "crops.varietySpecies": 10,
+    "crops.productType": 8,
+    "businessName": 5,
+    "firstName": 2,
+    "farmLocation": 2
+  },
+  name: "Global_Agro_Search_Index"
+});
 
 module.exports = mongoose.model("User", userSchema);

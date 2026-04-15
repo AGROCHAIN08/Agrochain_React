@@ -1,6 +1,7 @@
 const User = require("../models/user");
 const Order = require("../models/order");
 const RetailerOrder = require("../models/retailerOrder");
+const redisClient = require("../config/redis");
 
 // ===========================
 // DEALER PROFILE MANAGEMENT
@@ -629,4 +630,39 @@ exports.getRetailerOrders = async (req, res, next) => {
   }
 };
 
+// Find your existing inventory update function and integrate this logic
+exports.addToInventory = async (req, res) => {
+  try {
+    const dealerEmail = req.user.email; // Assuming you set req.user via auth middleware
+    const newInventoryItem = req.body;
+
+    // Find the dealer and add to inventory
+    const dealer = await User.findOne({ email: dealerEmail, role: "dealer" });
+    if (!dealer) {
+      return res.status(404).json({ success: false, message: "Dealer not found" });
+    }
+
+    dealer.inventory.push(newInventoryItem);
+    await dealer.save();
+
+    // ==========================================
+    // CRITICAL CACHE CLEARING STEP
+    // ==========================================
+    // Clear the cache so retailers see the new product immediately
+    if (redisClient.isReady) {
+      await redisClient.del("all_available_products");
+      console.log("🧹 Cache cleared: all_available_products");
+    }
+
+    res.status(201).json({ 
+      success: true, 
+      message: "Item added to inventory successfully",
+      inventory: dealer.inventory 
+    });
+
+  } catch (error) {
+    console.error("Error adding to inventory:", error);
+    res.status(500).json({ success: false, message: "Server Error" });
+  }
+};
 module.exports = exports;

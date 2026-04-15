@@ -7,6 +7,7 @@ const fs = require("fs");
 const path = require("path");
 const swaggerUi = require("swagger-ui-express");
 const swaggerSpec = require("./swagger");
+const searchRoutes = require("./routes/search");
 
 // Load environment variables first
 dotenv.config();
@@ -37,6 +38,8 @@ const accessLogPath = path.join(__dirname, "logs", "access.log");
 const logStream = fs.createWriteStream(accessLogPath, { flags: "a" });
 
 app.use(morgan("combined", { stream: logStream }));
+
+app.use("/api/search", searchRoutes);
 
 app.use(cors({
   origin: function (origin, callback) {

@@ -1,5 +1,6 @@
 const User = require("../models/user");
 const RetailerOrder = require("../models/retailerOrder");
+const redisClient = require("../config/redis");
 
 // Get All Products from All Dealer Inventories
 exports.getDealerInventories = async (req, res) => {
@@ -332,6 +333,68 @@ exports.updateRetailerProfile = async (req, res) => {
   } catch (err) {
     console.error("Error updating retailer profile:", err);
     res.status(500).json({ msg: "Server Error during profile update" });
+  }
+};
+
+// Update or add this function to handle fetching products for the retailer dashboard
+exports.getAvailableProducts = async (req, res) => {
+  try {
+    const cacheKey = "all_available_products";
+
+    // Start timing the request for your evaluation report
+    console.time("ResponseTime");
+
+    // 1. Check if Redis is connected and has the cached data
+    if (redisClient.isReady) {
+      const cachedProducts = await redisClient.get(cacheKey);
+      
+      if (cachedProducts) {
+        console.timeEnd("ResponseTime"); // Stop timer
+        console.log("⚡ Serving from Redis Cache");
+        return res.status(200).json({
+          source: "Redis Cache",
+          success: true,
+          data: JSON.parse(cachedProducts),
+        });
+      }
+    }
+
+    // 2. Cache Miss: Fetch from MongoDB
+    console.log("🐢 Serving from MongoDB");
+    // Find all dealers and select only their inventory and business info
+    const dealers = await User.find({ role: "dealer" }).select("inventory businessName email warehouseAddress");
+    
+    // Extract and flatten the inventory arrays into a single list of products
+    let allProducts = [];
+    dealers.forEach(dealer => {
+      if (dealer.inventory && dealer.inventory.length > 0) {
+        dealer.inventory.forEach(item => {
+          allProducts.push({ 
+            ...item.toObject(), 
+            dealerEmail: dealer.email,
+            dealerBusinessName: dealer.businessName,
+            warehouseAddress: dealer.warehouseAddress
+          });
+        });
+      }
+    });
+
+    // 3. Save the result to Redis for future requests (Expire after 1 hour / 3600 seconds)
+    if (redisClient.isReady) {
+      await redisClient.setEx(cacheKey, 3600, JSON.stringify(allProducts));
+    }
+
+    console.timeEnd("ResponseTime"); // Stop timer
+
+    return res.status(200).json({
+      source: "MongoDB",
+      success: true,
+      data: allProducts,
+    });
+
+  } catch (error) {
+    console.error("Error fetching products:", error);
+    res.status(500).json({ success: false, message: "Server error while fetching products" });
   }
 };
 module.exports = exports;
