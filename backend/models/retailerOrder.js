@@ -36,7 +36,17 @@ const retailerOrderSchema = new mongoose.Schema({
   },
   
   // Review tracking
-  reviewSubmitted: { type: Boolean, default: false }
+  reviewSubmitted: { type: Boolean, default: false },
+  review: {
+    retailerEmail: { type: String },
+    quality: {
+      type: String,
+      enum: ['Excellent', 'Good', 'Average', 'Poor', '']
+    },
+    comments: { type: String },
+    rating: { type: Number, min: 1, max: 5 },
+    date: { type: Date }
+  }
   
 }, { timestamps: true });
 

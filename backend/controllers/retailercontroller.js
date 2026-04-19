@@ -3,7 +3,7 @@ const RetailerOrder = require("../models/retailerOrder");
 const redisClient = require("../config/redis");
 
 // Get All Products from All Dealer Inventories
-exports.getDealerInventories = async (req, res) => {
+exports.getDealerInventories = async (req, res, next) => {
   try {
     const dealers = await User.find({
       role: "dealer",
@@ -37,7 +37,7 @@ exports.getDealerInventories = async (req, res) => {
 };
 
 // Place an order from the retailer's cart
-exports.placeOrder = async (req, res) => {
+exports.placeOrder = async (req, res, next) => {
   try {
     const { retailerEmail, cartItems } = req.body;
     if (!cartItems || cartItems.length === 0) {
@@ -95,7 +95,7 @@ exports.placeOrder = async (req, res) => {
 };
 
 // Get all orders for a specific retailer
-exports.getOrders = async (req, res) => {
+exports.getOrders = async (req, res, next) => {
     try {
         const retailerEmail = req.params.email;
         const orders = await RetailerOrder.find({ retailerEmail }).sort({ createdAt: -1 });
@@ -109,17 +109,42 @@ exports.getOrders = async (req, res) => {
 exports.updateOrder = async (req, res) => {
   try {
     const { orderId } = req.params;
-    const { products, totalAmount, paymentMethod } = req.body;
+    const { products, totalAmount, paymentMethod, orderStatus, status } = req.body || {};
 
     const order = await RetailerOrder.findById(orderId);
     if (!order) {
       return res.status(404).json({ msg: "Order not found" });
     }
 
-    order.products = products;
-    order.totalAmount = totalAmount;
-    order.paymentDetails.method = paymentMethod;
-    order.paymentDetails.status = 'Pending';
+    if (products !== undefined) {
+      if (!Array.isArray(products) || products.length === 0) {
+        return res.status(400).json({ msg: "products must be a non-empty array" });
+      }
+      order.products = products;
+    }
+
+    if (totalAmount !== undefined) {
+      if (Number.isNaN(Number(totalAmount)) || Number(totalAmount) < 0) {
+        return res.status(400).json({ msg: "totalAmount must be a positive number" });
+      }
+      order.totalAmount = Number(totalAmount);
+    }
+
+    if (paymentMethod !== undefined) {
+      order.paymentDetails.method = paymentMethod;
+      order.paymentDetails.status = 'Pending';
+    }
+
+    const nextStatus = orderStatus || status;
+    if (nextStatus !== undefined) {
+      const allowedStatuses = ['Placed', 'Processing', 'Shipped', 'Delivered', 'Cancelled'];
+      if (!allowedStatuses.includes(nextStatus)) {
+        return res.status(400).json({
+          msg: `Invalid status. Use one of: ${allowedStatuses.join(', ')}`,
+        });
+      }
+      order.orderStatus = nextStatus;
+    }
 
     const updatedOrder = await order.save();
     res.json({ msg: "Order updated successfully", order: updatedOrder });
@@ -134,7 +159,15 @@ exports.updateOrder = async (req, res) => {
 exports.completePayment = async (req, res) => {
   try {
     const { orderId } = req.params;
-    const { products, totalAmount, paymentMethod } = req.body;
+    const { products, totalAmount, paymentMethod } = req.body || {};
+
+    if (!process.env.STRIPE_SECRET_KEY) {
+      return res.status(500).json({ msg: "Stripe secret key is not configured" });
+    }
+
+    if (!process.env.FRONTEND_URL) {
+      return res.status(500).json({ msg: "FRONTEND_URL is not configured" });
+    }
 
     const order = await RetailerOrder.findById(orderId);
     if (!order) {
@@ -145,10 +178,19 @@ exports.completePayment = async (req, res) => {
     }
 
     // Update order with latest product quantities/amounts before payment
-    if (products) order.products = products;
+    if (products) {
+      if (!Array.isArray(products) || products.length === 0) {
+        return res.status(400).json({ msg: "products must be a non-empty array" });
+      }
+      order.products = products;
+    }
     if (totalAmount) order.totalAmount = totalAmount;
     if (paymentMethod) order.paymentDetails.method = paymentMethod;
     await order.save();
+
+    if (!order.products || order.products.length === 0) {
+      return res.status(400).json({ msg: "Order has no products to pay for" });
+    }
 
     // Create Stripe Checkout Session
     const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
@@ -200,13 +242,24 @@ exports.completePayment = async (req, res) => {
 // Submit Review for Dealer Products
 exports.submitReview = async (req, res) => {
   try {
-    const { orderId, retailerEmail, quality, comments, rating } = req.body;
+    const { orderId, quality, comments, rating } = req.body || {};
+    const retailerEmail = req.body?.retailerEmail || req.user?.email;
 
     if (!orderId || !retailerEmail || !quality || !comments || !rating) {
-      return res.status(400).json({ msg: "All fields are required" });
+      return res.status(400).json({
+        msg: "orderId, retailerEmail, quality, comments, and rating are required"
+      });
     }
 
-    if (rating < 1 || rating > 5) {
+    const allowedQuality = ['Excellent', 'Good', 'Average', 'Poor'];
+    if (!allowedQuality.includes(quality)) {
+      return res.status(400).json({
+        msg: `Invalid quality. Use one of: ${allowedQuality.join(', ')}`
+      });
+    }
+
+    const numericRating = Number(rating);
+    if (!Number.isInteger(numericRating) || numericRating < 1 || numericRating > 5) {
       return res.status(400).json({ msg: "Rating must be between 1 and 5" });
     }
 
@@ -216,12 +269,18 @@ exports.submitReview = async (req, res) => {
       return res.status(404).json({ msg: "Order not found" });
     }
 
-    if (order.retailerEmail !== retailerEmail) {
-      return res.status(403).json({ msg: "Unauthorized to review this order" });
+    if (order.retailerEmail !== retailerEmail || order.retailerEmail !== req.user?.email) {
+      return res.status(403).json({
+        msg: "Unauthorized to review this order. Use the retailer token for the same email that placed the order."
+      });
     }
 
     if (order.paymentDetails.status !== 'Completed') {
-      return res.status(400).json({ msg: "Can only review completed orders" });
+      return res.status(400).json({
+        msg: "Can only review completed orders",
+        currentPaymentStatus: order.paymentDetails.status,
+        hint: "Complete Stripe payment first, then submit the review."
+      });
     }
 
     if (order.reviewSubmitted) {
@@ -239,7 +298,7 @@ exports.submitReview = async (req, res) => {
       retailerEmail,
       quality,
       comments,
-      rating: parseInt(rating),
+      rating: numericRating,
       date: new Date()
     };
 
@@ -284,26 +343,24 @@ exports.submitReview = async (req, res) => {
       }
     }
 
-    if (reviewsAdded === 0) {
-      console.warn("No inventory items were updated with reviews");
-      return res.status(400).json({ 
-        msg: "Could not associate review with inventory items. Please check order details." 
-      });
+    order.review = reviewData;
+    order.reviewSubmitted = true;
+
+    if (reviewsAdded > 0) {
+      await dealer.save();
+      console.log("Dealer saved with updated inventory");
     }
 
-    // Save dealer with updated inventory
-    await dealer.save();
-    console.log("Dealer saved with updated inventory");
-
-    // Mark order as reviewed
-    order.reviewSubmitted = true;
     await order.save();
     console.log("Order marked as reviewed");
 
     res.json({ 
       msg: "Review submitted successfully",
       review: reviewData,
-      itemsReviewed: reviewsAdded
+      itemsReviewed: reviewsAdded,
+      note: reviewsAdded === 0
+        ? "Review saved on the order. Matching dealer inventory item was not found, likely because the purchased stock was sold out."
+        : undefined
     });
 
   } catch (err) {

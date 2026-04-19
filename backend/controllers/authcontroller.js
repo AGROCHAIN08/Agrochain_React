@@ -20,8 +20,28 @@ const transport = nodemailer.createTransport({
 // Store OTPs temporarily (in production, use Redis or database)
 const otpStore = new Map();
 
+// Legacy password-login endpoint.
+// The current app authenticates users through OTP or Google OAuth; this keeps
+// the documented /api/auth/login route from crashing the server at startup.
+exports.login = async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ msg: "Email is required" });
+  }
+
+  const user = await User.findOne({ email });
+  if (!user) {
+    return res.status(400).json({ msg: "Email not registered. Please signup first." });
+  }
+
+  return res.status(400).json({
+    msg: "Password login is not enabled. Please use OTP login or Google login.",
+  });
+};
+
 // Send OTP for signup
-exports.sendOTP = async (req, res) => {
+exports.sendOTP = async (req, res, next) => {
   try {
     const { email } = req.body;
     
@@ -73,7 +93,7 @@ exports.sendOTP = async (req, res) => {
 };
 
 // Send OTP for login
-exports.sendLoginOTP = async (req, res) => {
+exports.sendLoginOTP = async (req, res, next) => {
   try {
     const { email } = req.body;
     
@@ -141,7 +161,7 @@ exports.sendLoginOTP = async (req, res) => {
 };
 
 // Verify OTP for signup
-exports.verifyOTP = async (req, res) => {
+exports.verifyOTP = async (req, res, next) => {
   try {
     const { email, otp } = req.body;
     
@@ -174,7 +194,7 @@ exports.verifyOTP = async (req, res) => {
 };
 
 // Verify OTP for login
-exports.verifyLoginOTP = async (req, res) => {
+exports.verifyLoginOTP = async (req, res, next) => {
   try {
     const { email, otp } = req.body;
     
@@ -395,7 +415,7 @@ exports.verifyGoogleLogin = async (req, res) => {
 
 
 // Regular signup with email OTP
-exports.signup = async (req, res) => {
+exports.signup = async (req, res, next) => {
   try {
     const { role, firstName, mobile, email, emailVerified } = req.body;
 
@@ -452,7 +472,7 @@ exports.signup = async (req, res) => {
 };
 
 // Signup with Google verification
-exports.signupWithGoogle = async (req, res) => {
+exports.signupWithGoogle = async (req, res, next) => {
   try {
     const { role, googleToken, ...otherData } = req.body;
 
@@ -519,7 +539,7 @@ exports.signupWithGoogle = async (req, res) => {
   }
 };
 
-exports.updateFarmerProfile = async (req, res) => {
+exports.updateFarmerProfile = async (req, res, next) => {
   try {
     const { email } = req.params;
     const updates = req.body;
