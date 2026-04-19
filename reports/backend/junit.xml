@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<testsuites>
+	<testsuite name="backend app" time="0.447155" disabled="0" errors="0" tests="4" failures="0" skipped="0" hostname="Sriman3885">
+		<testcase name="serves the health check payload" time="0.407911" classname="test"/>
+		<testcase name="returns CORS headers for allowed origins" time="0.012700" classname="test"/>
+		<testcase name="rejects blocked origins through the central error handler" time="0.011327" classname="test"/>
+		<testcase name="returns a structured 404 response for unknown endpoints" time="0.013679" classname="test"/>
+	</testsuite>
+	<testsuite name="searchController.globalSearch" time="0.006714" disabled="0" errors="0" tests="4" failures="0" skipped="0" hostname="Sriman3885">
+		<testcase name="returns 400 when the search query is missing" time="0.001478" classname="test"/>
+		<testcase name="returns cached results when Redis already has them" time="0.001245" classname="test"/>
+		<testcase name="formats MongoDB results and escapes special characters in the search term" time="0.002186" classname="test"/>
+		<testcase name="returns 500 when the search operation throws" time="0.001383" classname="test"/>
+	</testsuite>
+	<testsuite name="authMiddleware.protect" time="0.012430" disabled="0" errors="0" tests="4" failures="0" skipped="0" hostname="Sriman3885">
+		<testcase name="rejects requests without an authorization header" time="0.000754" classname="test"/>
+		<testcase name="rejects malformed bearer headers" time="0.000380" classname="test"/>
+		<testcase name="attaches the decoded user for valid bearer tokens" time="0.007240" classname="test"/>
+		<testcase name="rejects expired tokens with a clear error" time="0.003723" classname="test"/>
+	</testsuite>
+	<testsuite name="roleMiddleware.authorize" time="0.001776" disabled="0" errors="0" tests="3" failures="0" skipped="0" hostname="Sriman3885">
+		<testcase name="rejects requests when no user is attached" time="0.000505" classname="test"/>
+		<testcase name="rejects users whose role is not allowed" time="0.000605" classname="test"/>
+		<testcase name="allows users with an approved role" time="0.000426" classname="test"/>
+	</testsuite>
+	<!-- tests 15 -->
+	<!-- suites 4 -->
+	<!-- pass 15 -->
+	<!-- fail 0 -->
+	<!-- cancelled 0 -->
+	<!-- skipped 0 -->
+	<!-- todo 0 -->
+	<!-- duration_ms 728.7787 -->
+</testsuites>

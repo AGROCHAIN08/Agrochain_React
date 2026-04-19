@@ -1,8 +1,23 @@
 // src/redux/slices/authSlice.js
 import { createSlice } from '@reduxjs/toolkit';
 
+const safeReadJson = (key) => {
+  const value = localStorage.getItem(key);
+
+  if (!value) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(value);
+  } catch (error) {
+    localStorage.removeItem(key);
+    return null;
+  }
+};
+
 const initialState = {
-  user: JSON.parse(localStorage.getItem('user')) || null,
+  user: safeReadJson('user'),
   token: localStorage.getItem('token') || null,
   isAuthenticated: !!localStorage.getItem('token'),
   loading: false,

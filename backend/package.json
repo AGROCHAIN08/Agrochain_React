@@ -22,7 +22,8 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node --experimental-test-isolation=none --test",
+    "test:report": "node ../scripts/run-backend-tests.mjs"
   },
   "keywords": [],
   "author": "",

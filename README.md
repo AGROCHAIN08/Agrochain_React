@@ -161,4 +161,32 @@ Access it at:
 
 ---
 
+## Testing
+
+Unit tests now cover the backend middleware and app behavior, plus the frontend Redux business logic.
+
+Generate all test reports from the repository root:
+
+```bash
+node scripts/run-all-tests.mjs
+```
+
+Run each side individually if needed:
+
+```bash
+node scripts/run-backend-tests.mjs
+node scripts/run-frontend-tests.mjs
+```
+
+Generated artifacts:
+
+- `reports/backend/junit.xml`
+- `reports/backend/coverage/raw/`
+- `reports/frontend/test-report.html`
+- `reports/frontend/coverage/lcov-report/index.html`
+
+If you prefer package scripts on Windows PowerShell, use `npm.cmd run test:report`.
+
+---
+
 **Developed by AgroChain team using Node.js, Express, MongoDB, and React.**

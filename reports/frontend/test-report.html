@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AgroChain Frontend Test Report</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f6f3ea;
+      --panel: #fffdf8;
+      --ink: #1f2933;
+      --muted: #5f6c7b;
+      --line: #e7dcc9;
+      --accent: #0f766e;
+      --good: #1f7a4d;
+      --bad: #b42318;
+      --warn: #b54708;
+      --shadow: 0 18px 40px rgba(68, 52, 21, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 32px;
+      font-family: Georgia, "Times New Roman", serif;
+      background:
+        radial-gradient(circle at top left, rgba(15, 118, 110, 0.12), transparent 28%),
+        linear-gradient(180deg, #fbf8f2 0%, var(--bg) 100%);
+      color: var(--ink);
+    }
+
+    .page {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    header {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      padding: 28px;
+      box-shadow: var(--shadow);
+      margin-bottom: 24px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: clamp(2rem, 4vw, 3.2rem);
+      line-height: 1.05;
+    }
+
+    .subtitle {
+      margin: 0;
+      color: var(--muted);
+      font-size: 1.05rem;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+      margin: 24px 0 4px;
+    }
+
+    .card {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 18px;
+    }
+
+    .card.good {
+      border-color: rgba(31, 122, 77, 0.25);
+    }
+
+    .card.bad {
+      border-color: rgba(180, 35, 24, 0.25);
+    }
+
+    .card.warn {
+      border-color: rgba(181, 71, 8, 0.25);
+    }
+
+    .label {
+      color: var(--muted);
+      font-size: 0.92rem;
+      margin-bottom: 8px;
+    }
+
+    .value {
+      font-size: 2rem;
+      font-weight: 700;
+    }
+
+    .suite {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      padding: 24px;
+      box-shadow: var(--shadow);
+      margin-bottom: 18px;
+    }
+
+    .suite h2 {
+      margin: 0 0 10px;
+      font-size: 1.3rem;
+      overflow-wrap: anywhere;
+    }
+
+    .suite-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      color: var(--muted);
+      margin-bottom: 18px;
+      font-size: 0.95rem;
+    }
+
+    .tests {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: grid;
+      gap: 12px;
+    }
+
+    .test {
+      border: 1px solid var(--line);
+      border-left: 6px solid var(--accent);
+      border-radius: 16px;
+      padding: 14px 16px;
+      background: #fff;
+    }
+
+    .test.failed {
+      border-left-color: var(--bad);
+    }
+
+    .test.passed {
+      border-left-color: var(--good);
+    }
+
+    .test-header {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 12px;
+      align-items: start;
+    }
+
+    .status {
+      font-size: 0.8rem;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+    }
+
+    .title {
+      font-weight: 600;
+      overflow-wrap: anywhere;
+    }
+
+    .duration {
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    pre {
+      margin: 14px 0 0;
+      padding: 14px;
+      border-radius: 12px;
+      overflow: auto;
+      background: #221b16;
+      color: #f9f4eb;
+      font-size: 0.87rem;
+      line-height: 1.45;
+    }
+
+    @media (max-width: 640px) {
+      body {
+        padding: 18px;
+      }
+
+      .test-header {
+        grid-template-columns: 1fr;
+      }
+
+      .duration {
+        white-space: normal;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header>
+      <h1>Frontend Test Report</h1>
+      <p class="subtitle">Generated for AgroChain on 19/4/2026, 6:44:08 pm</p>
+      <div class="grid">
+        
+    <div class="card neutral">
+      <div class="label">Suites</div>
+      <div class="value">3</div>
+    </div>
+  
+        
+    <div class="card neutral">
+      <div class="label">Tests</div>
+      <div class="value">14</div>
+    </div>
+  
+        
+    <div class="card good">
+      <div class="label">Passed</div>
+      <div class="value">14</div>
+    </div>
+  
+        
+    <div class="card good">
+      <div class="label">Failed</div>
+      <div class="value">0</div>
+    </div>
+  
+        
+    <div class="card neutral">
+      <div class="label">Pending</div>
+      <div class="value">0</div>
+    </div>
+  
+        
+    <div class="card neutral">
+      <div class="label">Run Time</div>
+      <div class="value">0.00s</div>
+    </div>
+  
+      </div>
+    </header>
+    
+    <section class="suite">
+      <h2>C:\Users\bsrim\OneDrive\Desktop\Agrochain_React\frontend\agrochain-client\src\redux\slices\cartSlice.test.js</h2>
+      <div class="suite-meta">
+        <span>undefined passed</span>
+        <span>undefined failed</span>
+        <span>undefined pending</span>
+        <span>0.00s</span>
+      </div>
+      <ul class="tests">
+        <li class="test passed">
+          <div class="test-header">
+            <span class="status">PASSED</span>
+            <span class="title">initializeCart loads the role-specific cart and totals</span>
+            <span class="duration">0.00s</span>
+          </div>
+          
+        </li>
+      
+        <li class="test passed">
+          <div class="test-header">
+            <span class="status">PASSED</span>
+            <span class="title">initializeCart falls back safely when stored cart JSON is invalid</span>
+            <span class="duration">0.00s</span>
+          </div>
+          
+        </li>
+      
+        <li class="test passed">
+          <div class="test-header">
+            <span class="status">PASSED</span>
+            <span class="title">addToCart merges quantities for existing items and persists the cart</span>
+            <span class="duration">0.00s</span>
+          </div>
+          
+        </li>
+      
+        <li class="test passed">
+          <div class="test-header">
+            <span class="status">PASSED</span>
+            <span class="title">updateCartQuantity recalculates totals using targetPrice when present</span>
+            <span class="duration">0.00s</span>
+          </div>
+          
+        </li>
+      
+        <li class="test passed">
+          <div class="test-header">
+            <span class="status">PASSED</span>
+            <span class="title">clearCart removes all items and deletes the stored cart</span>
+            <span class="duration">0.00s</span>
+          </div>
+          
+        </li>
+      </ul>
+    </section>
+  
+    <section class="suite">
+      <h2>C:\Users\bsrim\OneDrive\Desktop\Agrochain_React\frontend\agrochain-client\src\redux\slices\authSlice.test.js</h2>
+      <div class="suite-meta">
+        <span>undefined passed</span>
+        <span>undefined failed</span>
+        <span>undefined pending</span>
+        <span>0.00s</span>
+      </div>
+      <ul class="tests">
+        <li class="test passed">
+          <div class="test-header">
+            <span class="status">PASSED</span>
+            <span class="title">hydrates initial auth state from localStorage</span>
+            <span class="duration">0.00s</span>
+          </div>
+          
+        </li>
+      
+        <li class="test passed">
+          <div class="test-header">
+            <span class="status">PASSED</span>
+            <span class="title">drops invalid stored user JSON instead of crashing</span>
+            <span class="duration">0.00s</span>
+          </div>
+          
+        </li>
+      
+        <li class="test passed">
+          <div class="test-header">
+            <span class="status">PASSED</span>
+            <span class="title">loginSuccess stores the user and token</span>
+            <span class="duration">0.00s</span>
+          </div>
+          
+        </li>
+      
+        <li class="test passed">
+          <div class="test-header">
+            <span class="status">PASSED</span>
+            <span class="title">logout clears persisted authentication data</span>
+            <span class="duration">0.00s</span>
+          </div>
+          
+        </li>
+      
+        <li class="test passed">
+          <div class="test-header">
+            <span class="status">PASSED</span>
+            <span class="title">updateProfile merges new fields into the current user</span>
+            <span class="duration">0.00s</span>
+          </div>
+          
+        </li>
+      </ul>
+    </section>
+  
+    <section class="suite">
+      <h2>C:\Users\bsrim\OneDrive\Desktop\Agrochain_React\frontend\agrochain-client\src\redux\slices\notificationSlice.test.js</h2>
+      <div class="suite-meta">
+        <span>undefined passed</span>
+        <span>undefined failed</span>
+        <span>undefined pending</span>
+        <span>0.00s</span>
+      </div>
+      <ul class="tests">
+        <li class="test passed">
+          <div class="test-header">
+            <span class="status">PASSED</span>
+            <span class="title">setNotifications tracks unread count from the payload</span>
+            <span class="duration">0.00s</span>
+          </div>
+          
+        </li>
+      
+        <li class="test passed">
+          <div class="test-header">
+            <span class="status">PASSED</span>
+            <span class="title">addNotification prepends notifications and increments unread when needed</span>
+            <span class="duration">0.00s</span>
+          </div>
+          
+        </li>
+      
+        <li class="test passed">
+          <div class="test-header">
+            <span class="status">PASSED</span>
+            <span class="title">markAsRead only decrements unread count once</span>
+            <span class="duration">0.00s</span>
+          </div>
+          
+        </li>
+      
+        <li class="test passed">
+          <div class="test-header">
+            <span class="status">PASSED</span>
+            <span class="title">markAllAsRead and clearNotifications reset notification state cleanly</span>
+            <span class="duration">0.00s</span>
+          </div>
+          
+        </li>
+      </ul>
+    </section>
+  
+  </div>
+</body>
+</html>

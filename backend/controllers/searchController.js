@@ -1,6 +1,8 @@
 const User = require("../models/user");
 const redisClient = require("../config/redis");
 
+const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
 exports.globalSearch = async (req, res) => {
   try {
     const searchQuery = req.query.q;
@@ -38,6 +40,8 @@ exports.globalSearch = async (req, res) => {
     .lean(); // .lean() strips Mongoose overhead for faster execution
 
     // 3. Format the results to make them easy for the frontend to display
+    const safeSearchPattern = new RegExp(escapeRegExp(searchQuery), "i");
+
     const formattedResults = searchResults.map(user => {
       return {
         userId: user._id,
@@ -46,10 +50,10 @@ exports.globalSearch = async (req, res) => {
         location: user.farmLocation,
         // Filter the sub-arrays to only show items that likely matched the search
         matchingInventory: user.inventory ? user.inventory.filter(i => 
-          new RegExp(searchQuery, 'i').test(i.productName) || new RegExp(searchQuery, 'i').test(i.productType)
+          safeSearchPattern.test(i.productName) || safeSearchPattern.test(i.productType)
         ) : [],
         matchingCrops: user.crops ? user.crops.filter(c => 
-          new RegExp(searchQuery, 'i').test(c.varietySpecies) || new RegExp(searchQuery, 'i').test(c.productType)
+          safeSearchPattern.test(c.varietySpecies) || safeSearchPattern.test(c.productType)
         ) : [],
         relevanceScore: user.score
       };

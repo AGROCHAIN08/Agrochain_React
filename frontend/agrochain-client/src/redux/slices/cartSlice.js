@@ -1,10 +1,24 @@
 // src/redux/slices/cartSlice.js
 import { createSlice } from '@reduxjs/toolkit';
 
+const safeReadJson = (key) => {
+  const value = localStorage.getItem(key);
+
+  if (!value) {
+    return [];
+  }
+
+  try {
+    return JSON.parse(value);
+  } catch (error) {
+    localStorage.removeItem(key);
+    return [];
+  }
+};
+
 const getInitialCart = (userRole) => {
   const cartKey = `${userRole}Cart`;
-  const savedCart = localStorage.getItem(cartKey);
-  return savedCart ? JSON.parse(savedCart) : [];
+  return safeReadJson(cartKey);
 };
 
 const initialState = {
