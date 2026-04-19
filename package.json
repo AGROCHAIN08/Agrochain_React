@@ -5,6 +5,7 @@
     "test": "node scripts/run-all-tests.mjs",
     "test:report": "node scripts/run-all-tests.mjs",
     "test:backend": "node scripts/run-backend-tests.mjs",
-    "test:frontend": "node scripts/run-frontend-tests.mjs"
+    "test:frontend": "node scripts/run-frontend-tests.mjs",
+    "performance:report": "node backend/scripts/generate-optimization-report.js"
   }
 }

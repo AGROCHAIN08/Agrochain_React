@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>AgroChain Frontend Test Report</title>
+  <title>Frontend Test Report</title>
   <style>
     :root {
       color-scheme: light;
@@ -19,9 +19,7 @@
       --shadow: 0 18px 40px rgba(68, 52, 21, 0.08);
     }
 
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
@@ -33,12 +31,9 @@
       color: var(--ink);
     }
 
-    .page {
-      max-width: 1100px;
-      margin: 0 auto;
-    }
+    .page { max-width: 1100px; margin: 0 auto; }
 
-    header {
+    header, .panel {
       background: var(--panel);
       border: 1px solid var(--line);
       border-radius: 24px;
@@ -53,7 +48,7 @@
       line-height: 1.05;
     }
 
-    .subtitle {
+    .subtitle, .muted {
       margin: 0;
       color: var(--muted);
       font-size: 1.05rem;
@@ -73,17 +68,9 @@
       padding: 18px;
     }
 
-    .card.good {
-      border-color: rgba(31, 122, 77, 0.25);
-    }
-
-    .card.bad {
-      border-color: rgba(180, 35, 24, 0.25);
-    }
-
-    .card.warn {
-      border-color: rgba(181, 71, 8, 0.25);
-    }
+    .card.good { border-color: rgba(31, 122, 77, 0.25); }
+    .card.bad { border-color: rgba(180, 35, 24, 0.25); }
+    .card.warn { border-color: rgba(181, 71, 8, 0.25); }
 
     .label {
       color: var(--muted);
@@ -136,13 +123,9 @@
       background: #fff;
     }
 
-    .test.failed {
-      border-left-color: var(--bad);
-    }
-
-    .test.passed {
-      border-left-color: var(--good);
-    }
+    .test.failed { border-left-color: var(--bad); }
+    .test.passed { border-left-color: var(--good); }
+    .test.skipped { border-left-color: var(--warn); }
 
     .test-header {
       display: grid;
@@ -178,18 +161,72 @@
       line-height: 1.45;
     }
 
+    a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    ul {
+      margin: 0;
+      padding-left: 20px;
+    }
+
+    code {
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 0.95em;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      margin-top: 18px;
+    }
+
+    select {
+      min-width: 220px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--ink);
+      font: inherit;
+    }
+
+    iframe {
+      width: 100%;
+      min-height: 900px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: #fff;
+    }
+
+    .report-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin: 24px 0;
+    }
+
+    .report-link {
+      display: block;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: #fff;
+    }
+
+    .report-link strong {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 1.05rem;
+    }
+
     @media (max-width: 640px) {
-      body {
-        padding: 18px;
-      }
-
-      .test-header {
-        grid-template-columns: 1fr;
-      }
-
-      .duration {
-        white-space: normal;
-      }
+      body { padding: 18px; }
+      .test-header { grid-template-columns: 1fr; }
+      .duration { white-space: normal; }
     }
   </style>
 </head>
@@ -197,45 +234,38 @@
   <div class="page">
     <header>
       <h1>Frontend Test Report</h1>
-      <p class="subtitle">Generated for AgroChain on 19/4/2026, 7:31:40 pm</p>
+      <p class="subtitle">Generated for AgroChain on 20/4/2026, 4:00:10 am</p>
       <div class="grid">
-        
     <div class="card neutral">
       <div class="label">Suites</div>
       <div class="value">3</div>
     </div>
   
-        
     <div class="card neutral">
       <div class="label">Tests</div>
       <div class="value">14</div>
     </div>
   
-        
     <div class="card good">
       <div class="label">Passed</div>
       <div class="value">14</div>
     </div>
   
-        
     <div class="card good">
       <div class="label">Failed</div>
       <div class="value">0</div>
     </div>
   
-        
     <div class="card neutral">
       <div class="label">Pending</div>
       <div class="value">0</div>
     </div>
   
-        
     <div class="card neutral">
       <div class="label">Run Time</div>
       <div class="value">0.00s</div>
     </div>
-  
-      </div>
+  </div>
     </header>
     
     <section class="suite">

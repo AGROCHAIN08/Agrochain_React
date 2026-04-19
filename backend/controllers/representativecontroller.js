@@ -42,7 +42,16 @@ function buildCropDTO(farmer, crop) {
 ════════════════════════════════════════════════════════════ */
 exports.getPendingCrops = async (req, res, next) => {
   try {
-    const farmers = await User.find({ role: 'farmer' }, 'firstName lastName email mobile farmLocation crops');
+    const farmers = await User.find(
+      {
+        role: 'farmer',
+        $or: [
+          { 'crops.verificationStatus': 'pending' },
+          { 'crops.approvalStatus': 'pending' }
+        ]
+      },
+      'firstName lastName email mobile farmLocation crops'
+    ).lean();
 
     const allPending = [];
     farmers.forEach(farmer => {
@@ -201,7 +210,10 @@ exports.unclaimBatch = async (req, res, next) => {
 exports.getMyAssigned = async (req, res, next) => {
   try {
     const repEmail = req.user?.email;
-    const farmers = await User.find({ role: 'farmer' }, 'firstName lastName email mobile farmLocation crops');
+    const farmers = await User.find(
+      { role: 'farmer', 'crops.claimedBy': repEmail },
+      'firstName lastName email mobile farmLocation crops'
+    ).lean();
 
     const assigned = [];
     farmers.forEach(farmer => {
@@ -237,7 +249,18 @@ exports.getAllCropsForRep = async (req, res, next) => {
     const { status, mine } = req.query;
     const repEmail = req.user?.email;
 
-    const farmers = await User.find({ role: 'farmer' }, 'firstName lastName email mobile farmLocation crops');
+    const query = { role: 'farmer' };
+    if (status) {
+      query['crops.verificationStatus'] = status;
+    }
+    if (mine === 'true') {
+      query['crops.claimedBy'] = repEmail;
+    }
+
+    const farmers = await User.find(
+      query,
+      'firstName lastName email mobile farmLocation crops'
+    ).lean();
     const result = [];
 
     farmers.forEach(farmer => {
@@ -452,7 +475,15 @@ exports.getExpiryAlerts = async (req, res, next) => {
     const repEmail = req.user?.email;
     const cutoff = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
 
-    const farmers = await User.find({ role: 'farmer' }, 'firstName lastName email crops');
+    const farmers = await User.find(
+      {
+        role: 'farmer',
+        'crops.claimedBy': repEmail,
+        'crops.verificationStatus': 'approved',
+        'crops.expiryDate': { $lte: cutoff }
+      },
+      'firstName lastName email crops'
+    ).lean();
     const alerts  = [];
 
     farmers.forEach(farmer => {

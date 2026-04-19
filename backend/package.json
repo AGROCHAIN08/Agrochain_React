@@ -23,7 +23,8 @@
   "main": "index.js",
   "scripts": {
     "test": "node --experimental-test-isolation=none --test",
-    "test:report": "node ../scripts/run-backend-tests.mjs"
+    "test:report": "node ../scripts/run-backend-tests.mjs",
+    "performance:report": "node scripts/generate-optimization-report.js"
   },
   "keywords": [],
   "author": "",

@@ -8,24 +8,21 @@ exports.getDealerInventories = async (req, res, next) => {
     const dealers = await User.find({
       role: "dealer",
       inventory: { $exists: true, $not: { $size: 0 } },
-    });
+    })
+      .select("inventory businessName firstName lastName email mobile")
+      .lean();
 
-    let allInventory = [];
-
-    dealers.forEach(dealer => {
-      if (dealer.inventory && dealer.inventory.length > 0) {
-        dealer.inventory.forEach(item => {
-          const itemObj = item.toObject();
-          allInventory.push({
-            ...itemObj,
-            retailerReviews: itemObj.retailerReviews || [], // Ensure reviews are included
+    const allInventory = dealers.flatMap((dealer) =>
+      Array.isArray(dealer.inventory)
+        ? dealer.inventory.map((item) => ({
+            ...item,
+            retailerReviews: item.retailerReviews || [],
             dealerName: dealer.businessName || `${dealer.firstName} ${dealer.lastName || ''}`.trim(),
             dealerEmail: dealer.email,
             dealerMobile: dealer.mobile
-          });
-        });
-      }
-    });
+          }))
+        : []
+    );
 
     allInventory.sort((a, b) => new Date(b.addedDate || 0) - new Date(a.addedDate || 0));
     
@@ -49,12 +46,22 @@ exports.placeOrder = async (req, res, next) => {
       return res.status(404).json({ msg: "Retailer not found" });
     }
 
+    const dealerEmails = [...new Set(cartItems.map((item) => item.dealerEmail).filter(Boolean))];
+    const dealers = await User.find({
+      email: { $in: dealerEmails },
+      role: 'dealer'
+    })
+      .select("email businessName warehouseAddress")
+      .lean();
+    const dealerMap = new Map(dealers.map((dealer) => [dealer.email, dealer]));
+
     const ordersByDealer = {};
     for (const item of cartItems) {
       const dealerEmail = item.dealerEmail;
+      const dealer = dealerMap.get(dealerEmail);
+      if (!dealer) continue;
+
       if (!ordersByDealer[dealerEmail]) {
-        const dealer = await User.findOne({ email: dealerEmail, role: 'dealer' });
-        if (!dealer) continue;
         ordersByDealer[dealerEmail] = {
           dealerInfo: {
             email: dealer.email,
@@ -419,22 +426,21 @@ exports.getAvailableProducts = async (req, res) => {
     // 2. Cache Miss: Fetch from MongoDB
     console.log("🐢 Serving from MongoDB");
     // Find all dealers and select only their inventory and business info
-    const dealers = await User.find({ role: "dealer" }).select("inventory businessName email warehouseAddress");
+    const dealers = await User.find({ role: "dealer" })
+      .select("inventory businessName email warehouseAddress")
+      .lean();
     
     // Extract and flatten the inventory arrays into a single list of products
-    let allProducts = [];
-    dealers.forEach(dealer => {
-      if (dealer.inventory && dealer.inventory.length > 0) {
-        dealer.inventory.forEach(item => {
-          allProducts.push({ 
-            ...item.toObject(), 
+    const allProducts = dealers.flatMap((dealer) =>
+      Array.isArray(dealer.inventory)
+        ? dealer.inventory.map((item) => ({
+            ...item,
             dealerEmail: dealer.email,
             dealerBusinessName: dealer.businessName,
             warehouseAddress: dealer.warehouseAddress
-          });
-        });
-      }
-    });
+          }))
+        : []
+    );
 
     // 3. Save the result to Redis for future requests (Expire after 1 hour / 3600 seconds)
     if (redisClient.isReady) {

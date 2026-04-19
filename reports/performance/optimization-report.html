@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Performance And Redis Report</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f6f3ea;
+      --panel: #fffdf8;
+      --ink: #1f2933;
+      --muted: #5f6c7b;
+      --line: #e7dcc9;
+      --accent: #0f766e;
+      --good: #1f7a4d;
+      --bad: #b42318;
+      --warn: #b54708;
+      --shadow: 0 18px 40px rgba(68, 52, 21, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 32px;
+      font-family: Georgia, "Times New Roman", serif;
+      background:
+        radial-gradient(circle at top left, rgba(15, 118, 110, 0.12), transparent 28%),
+        linear-gradient(180deg, #fbf8f2 0%, var(--bg) 100%);
+      color: var(--ink);
+    }
+
+    .page { max-width: 1100px; margin: 0 auto; }
+
+    header, .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      padding: 28px;
+      box-shadow: var(--shadow);
+      margin-bottom: 24px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: clamp(2rem, 4vw, 3.2rem);
+      line-height: 1.05;
+    }
+
+    .subtitle, .muted {
+      margin: 0;
+      color: var(--muted);
+      font-size: 1.05rem;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+      margin: 24px 0 4px;
+    }
+
+    .card {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 18px;
+    }
+
+    .card.good { border-color: rgba(31, 122, 77, 0.25); }
+    .card.bad { border-color: rgba(180, 35, 24, 0.25); }
+    .card.warn { border-color: rgba(181, 71, 8, 0.25); }
+
+    .label {
+      color: var(--muted);
+      font-size: 0.92rem;
+      margin-bottom: 8px;
+    }
+
+    .value {
+      font-size: 2rem;
+      font-weight: 700;
+    }
+
+    .suite {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      padding: 24px;
+      box-shadow: var(--shadow);
+      margin-bottom: 18px;
+    }
+
+    .suite h2 {
+      margin: 0 0 10px;
+      font-size: 1.3rem;
+      overflow-wrap: anywhere;
+    }
+
+    .suite-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      color: var(--muted);
+      margin-bottom: 18px;
+      font-size: 0.95rem;
+    }
+
+    .tests {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: grid;
+      gap: 12px;
+    }
+
+    .test {
+      border: 1px solid var(--line);
+      border-left: 6px solid var(--accent);
+      border-radius: 16px;
+      padding: 14px 16px;
+      background: #fff;
+    }
+
+    .test.failed { border-left-color: var(--bad); }
+    .test.passed { border-left-color: var(--good); }
+    .test.skipped { border-left-color: var(--warn); }
+
+    .test-header {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 12px;
+      align-items: start;
+    }
+
+    .status {
+      font-size: 0.8rem;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+    }
+
+    .title {
+      font-weight: 600;
+      overflow-wrap: anywhere;
+    }
+
+    .duration {
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    pre {
+      margin: 14px 0 0;
+      padding: 14px;
+      border-radius: 12px;
+      overflow: auto;
+      background: #221b16;
+      color: #f9f4eb;
+      font-size: 0.87rem;
+      line-height: 1.45;
+    }
+
+    a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    ul {
+      margin: 0;
+      padding-left: 20px;
+    }
+
+    code {
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 0.95em;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      margin-top: 18px;
+    }
+
+    select {
+      min-width: 220px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--ink);
+      font: inherit;
+    }
+
+    iframe {
+      width: 100%;
+      min-height: 900px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: #fff;
+    }
+
+    .report-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin: 24px 0;
+    }
+
+    .report-link {
+      display: block;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: #fff;
+    }
+
+    .report-link strong {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 1.05rem;
+    }
+
+    @media (max-width: 640px) {
+      body { padding: 18px; }
+      .test-header { grid-template-columns: 1fr; }
+      .duration { white-space: normal; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header>
+      <h1>Performance And Redis Report</h1>
+      <p class="subtitle">Generated for AgroChain on 20/4/2026, 3:51:13 am</p>
+      
+    </header>
+    
+        <section class="suite">
+          <h2>AgroChain Optimization Report</h2>
+          
+        </section>
+      
+        <section class="suite">
+          
+          <ul><li>Added and used MongoDB indexes for high-frequency access patterns in `backend/models/user.js`, `backend/models/order.js`, `backend/models/retailerOrder.js`, `backend/models/representative.js`, and `backend/models/log.js`.</li><li>Reduced Mongoose overhead with `.lean()` and narrower `.select(...)` projections in read-heavy controllers.</li><li>Removed repeated per-order lookups by batching related user fetches in dealer/farmer order history endpoints.</li></ul>
+        </section>
+      
+        <section class="suite">
+          
+          <h2>Search Query</h2><ul><li>Sample search term: `rice`</li><li>Winning index: `Global_Agro_Search_Index`</li><li>Total docs examined: 1</li><li>Total keys examined: 1</li><h2>Dealer Order History Query</h2><li>Winning index: `dealerEmail_1_assignedDate_-1`</li><li>Total docs examined: 3</li><li>Total keys examined: 3</li></ul>
+        </section>
+      
+        <section class="suite">
+          
+          <h2>Search Endpoint Equivalent</h2><ul><li>Uncached MongoDB average: 95.36 ms</li><li>Cached Redis average: 4.77 ms</li><li>Improvement: 95.00%</li><h2>Dealer Product Feed Equivalent</h2><li>Uncached MongoDB average: 36.60 ms</li><li>Cached Redis average: 4.94 ms</li><li>Improvement: 86.51%</li></ul>
+        </section>
+      
+        <section class="suite">
+          
+          <ul><li>`backend/models/user.js`</li><li>`backend/models/log.js`</li><li>`backend/controllers/searchController.js`</li><li>`backend/controllers/retailercontroller.js`</li><li>`backend/controllers/dealercontroller.js`</li><li>`backend/controllers/farmercontroller.js`</li><li>`backend/controllers/representativecontroller.js`</li><li>`backend/config/redis.js`</li></ul>
+        </section>
+      
+        <section class="suite">
+          
+          <ul><li>Earlier, many endpoints fetched broad user documents and then performed extra filtering and repeated lookups in JavaScript.</li><li>Now, the app uses indexed fields, batched lookups, lean reads, projection, and Redis caching for repeated read traffic.</li><li>Result: less database work, fewer documents materialized in Node.js, lower response times on repeated requests, and better scalability as data grows.</li></ul>
+        </section>
+      
+  </div>
+</body>
+</html>

@@ -1,0 +1,489 @@
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import path from "node:path";
+
+export const escapeHtml = (value = "") =>
+  String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+
+export const formatDuration = (milliseconds = 0) => `${(milliseconds / 1000).toFixed(2)}s`;
+
+export function buildSummaryCard(label, value, tone = "neutral") {
+  return `
+    <div class="card ${tone}">
+      <div class="label">${escapeHtml(label)}</div>
+      <div class="value">${escapeHtml(value)}</div>
+    </div>
+  `;
+}
+
+export function renderPage({ title, subtitle, summaryCards, content }) {
+  return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>${escapeHtml(title)}</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f6f3ea;
+      --panel: #fffdf8;
+      --ink: #1f2933;
+      --muted: #5f6c7b;
+      --line: #e7dcc9;
+      --accent: #0f766e;
+      --good: #1f7a4d;
+      --bad: #b42318;
+      --warn: #b54708;
+      --shadow: 0 18px 40px rgba(68, 52, 21, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 32px;
+      font-family: Georgia, "Times New Roman", serif;
+      background:
+        radial-gradient(circle at top left, rgba(15, 118, 110, 0.12), transparent 28%),
+        linear-gradient(180deg, #fbf8f2 0%, var(--bg) 100%);
+      color: var(--ink);
+    }
+
+    .page { max-width: 1100px; margin: 0 auto; }
+
+    header, .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      padding: 28px;
+      box-shadow: var(--shadow);
+      margin-bottom: 24px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: clamp(2rem, 4vw, 3.2rem);
+      line-height: 1.05;
+    }
+
+    .subtitle, .muted {
+      margin: 0;
+      color: var(--muted);
+      font-size: 1.05rem;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+      margin: 24px 0 4px;
+    }
+
+    .card {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 18px;
+    }
+
+    .card.good { border-color: rgba(31, 122, 77, 0.25); }
+    .card.bad { border-color: rgba(180, 35, 24, 0.25); }
+    .card.warn { border-color: rgba(181, 71, 8, 0.25); }
+
+    .label {
+      color: var(--muted);
+      font-size: 0.92rem;
+      margin-bottom: 8px;
+    }
+
+    .value {
+      font-size: 2rem;
+      font-weight: 700;
+    }
+
+    .suite {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      padding: 24px;
+      box-shadow: var(--shadow);
+      margin-bottom: 18px;
+    }
+
+    .suite h2 {
+      margin: 0 0 10px;
+      font-size: 1.3rem;
+      overflow-wrap: anywhere;
+    }
+
+    .suite-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      color: var(--muted);
+      margin-bottom: 18px;
+      font-size: 0.95rem;
+    }
+
+    .tests {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: grid;
+      gap: 12px;
+    }
+
+    .test {
+      border: 1px solid var(--line);
+      border-left: 6px solid var(--accent);
+      border-radius: 16px;
+      padding: 14px 16px;
+      background: #fff;
+    }
+
+    .test.failed { border-left-color: var(--bad); }
+    .test.passed { border-left-color: var(--good); }
+    .test.skipped { border-left-color: var(--warn); }
+
+    .test-header {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 12px;
+      align-items: start;
+    }
+
+    .status {
+      font-size: 0.8rem;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+    }
+
+    .title {
+      font-weight: 600;
+      overflow-wrap: anywhere;
+    }
+
+    .duration {
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    pre {
+      margin: 14px 0 0;
+      padding: 14px;
+      border-radius: 12px;
+      overflow: auto;
+      background: #221b16;
+      color: #f9f4eb;
+      font-size: 0.87rem;
+      line-height: 1.45;
+    }
+
+    a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    ul {
+      margin: 0;
+      padding-left: 20px;
+    }
+
+    code {
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 0.95em;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      margin-top: 18px;
+    }
+
+    select {
+      min-width: 220px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--ink);
+      font: inherit;
+    }
+
+    iframe {
+      width: 100%;
+      min-height: 900px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: #fff;
+    }
+
+    .report-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin: 24px 0;
+    }
+
+    .report-link {
+      display: block;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: #fff;
+    }
+
+    .report-link strong {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 1.05rem;
+    }
+
+    @media (max-width: 640px) {
+      body { padding: 18px; }
+      .test-header { grid-template-columns: 1fr; }
+      .duration { white-space: normal; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header>
+      <h1>${escapeHtml(title)}</h1>
+      <p class="subtitle">${escapeHtml(subtitle)}</p>
+      ${summaryCards ? `<div class="grid">${summaryCards}</div>` : ""}
+    </header>
+    ${content}
+  </div>
+</body>
+</html>`;
+}
+
+export function parseJunitXml(xml) {
+  const suites = [];
+  const suiteRegex = /<testsuite\b([^>]*)>([\s\S]*?)<\/testsuite>/g;
+  const attrRegex = /(\w+)="([^"]*)"/g;
+
+  for (const suiteMatch of xml.matchAll(suiteRegex)) {
+    const attrs = Object.fromEntries(
+      [...suiteMatch[1].matchAll(attrRegex)].map((match) => [match[1], match[2]])
+    );
+    if (!attrs.name) {
+      continue;
+    }
+
+    const tests = [];
+    const testcaseRegex = /<testcase\b([^>]*)\/>|<testcase\b([^>]*)>([\s\S]*?)<\/testcase>/g;
+    for (const testMatch of suiteMatch[2].matchAll(testcaseRegex)) {
+      const testcaseAttrs = Object.fromEntries(
+        [...(testMatch[1] || testMatch[2] || "").matchAll(attrRegex)].map((match) => [match[1], match[2]])
+      );
+      const inner = testMatch[3] || "";
+      const failureMatch = inner.match(/<failure\b[^>]*>([\s\S]*?)<\/failure>/);
+      const skippedMatch = inner.match(/<skipped\b[^>]*\/>|<skipped\b[^>]*>([\s\S]*?)<\/skipped>/);
+      const status = failureMatch ? "failed" : skippedMatch ? "skipped" : "passed";
+
+      tests.push({
+        title: testcaseAttrs.name || "Unnamed test",
+        durationMs: Number(testcaseAttrs.time || 0) * 1000,
+        status,
+        failureMessage: failureMatch ? failureMatch[1].trim() : "",
+      });
+    }
+
+    suites.push({
+      name: attrs.name,
+      timeSeconds: Number(attrs.time || 0),
+      tests: Number(attrs.tests || tests.length),
+      failures: Number(attrs.failures || 0),
+      skipped: Number(attrs.skipped || 0),
+      passed: tests.filter((test) => test.status === "passed").length,
+      testCases: tests,
+    });
+  }
+
+  const summary = {
+    suites: suites.length,
+    tests: suites.reduce((sum, suite) => sum + suite.tests, 0),
+    passed: suites.reduce((sum, suite) => sum + suite.passed, 0),
+    failed: suites.reduce((sum, suite) => sum + suite.failures, 0),
+    skipped: suites.reduce((sum, suite) => sum + suite.skipped, 0),
+    durationMs: suites.reduce((sum, suite) => sum + (suite.timeSeconds * 1000), 0),
+  };
+
+  return { suites, summary };
+}
+
+export function buildBackendHtmlReport(results) {
+  const suitesMarkup = results.suites
+    .map((suite) => {
+      const testsMarkup = suite.testCases
+        .map((test) => `
+          <li class="test ${test.status}">
+            <div class="test-header">
+              <span class="status">${escapeHtml(test.status.toUpperCase())}</span>
+              <span class="title">${escapeHtml(test.title)}</span>
+              <span class="duration">${escapeHtml(formatDuration(test.durationMs))}</span>
+            </div>
+            ${test.failureMessage ? `<pre>${escapeHtml(test.failureMessage)}</pre>` : ""}
+          </li>
+        `)
+        .join("");
+
+      return `
+        <section class="suite">
+          <h2>${escapeHtml(suite.name)}</h2>
+          <div class="suite-meta">
+            <span>${escapeHtml(`${suite.passed} passed`)}</span>
+            <span>${escapeHtml(`${suite.failures} failed`)}</span>
+            <span>${escapeHtml(`${suite.skipped} skipped`)}</span>
+            <span>${escapeHtml(formatDuration(suite.timeSeconds * 1000))}</span>
+          </div>
+          <ul class="tests">${testsMarkup}</ul>
+        </section>
+      `;
+    })
+    .join("");
+
+  return renderPage({
+    title: "Backend Test Report",
+    subtitle: `Generated for AgroChain on ${new Date().toLocaleString("en-IN", { hour12: true })}`,
+    summaryCards: [
+      buildSummaryCard("Suites", results.summary.suites),
+      buildSummaryCard("Tests", results.summary.tests),
+      buildSummaryCard("Passed", results.summary.passed, "good"),
+      buildSummaryCard("Failed", results.summary.failed, results.summary.failed ? "bad" : "good"),
+      buildSummaryCard("Skipped", results.summary.skipped, results.summary.skipped ? "warn" : "neutral"),
+      buildSummaryCard("Run Time", formatDuration(results.summary.durationMs)),
+    ].join(""),
+    content: suitesMarkup,
+  });
+}
+
+export function getFrontendSummary(results) {
+  return {
+    suites: results.numTotalTestSuites,
+    tests: results.numTotalTests,
+    passed: results.numPassedTests,
+    failed: results.numFailedTests,
+    skipped: results.numPendingTests,
+    durationMs: results.testResults.reduce((sum, suite) => {
+      const duration = (suite.perfStats?.end ?? 0) - (suite.perfStats?.start ?? 0);
+      return sum + Math.max(duration, 0);
+    }, 0),
+  };
+}
+
+export function buildPerformanceHtmlReport(markdown) {
+  const sections = markdown
+    .split(/\n## /)
+    .map((section, index) => (index === 0 ? section : `## ${section}`))
+    .filter(Boolean);
+
+  const content = sections
+    .map((section) => {
+      const lines = section.split("\n").filter(Boolean);
+      const heading = lines.shift() || "";
+      const body = lines
+        .map((line) => {
+          if (line.startsWith("- ")) {
+            return `<li>${escapeHtml(line.slice(2))}</li>`;
+          }
+          if (line.startsWith("### ")) {
+            return `<h2>${escapeHtml(line.slice(4))}</h2>`;
+          }
+          if (line.startsWith("## ")) {
+            return `<h2>${escapeHtml(line.slice(3))}</h2>`;
+          }
+          return `<p class="muted">${escapeHtml(line)}</p>`;
+        })
+        .join("");
+
+      const hasList = body.includes("<li>");
+      return `
+        <section class="suite">
+          ${heading.startsWith("# ") ? `<h2>${escapeHtml(heading.slice(2))}</h2>` : ""}
+          ${hasList ? body.replace(/(<li>[\s\S]*<\/li>)/, "<ul>$1</ul>") : body}
+        </section>
+      `;
+    })
+    .join("");
+
+  return renderPage({
+    title: "Performance And Redis Report",
+    subtitle: `Generated for AgroChain on ${new Date().toLocaleString("en-IN", { hour12: true })}`,
+    summaryCards: "",
+    content,
+  });
+}
+
+export function writeReportsDashboard(repoRoot) {
+  const reportsDir = path.join(repoRoot, "reports");
+  const backendSummaryPath = path.join(reportsDir, "backend", "summary.json");
+  const frontendSummaryPath = path.join(reportsDir, "frontend", "summary.json");
+  const backendSummary = existsSync(backendSummaryPath)
+    ? JSON.parse(readFileSync(backendSummaryPath, "utf8"))
+    : null;
+  const frontendSummary = existsSync(frontendSummaryPath)
+    ? JSON.parse(readFileSync(frontendSummaryPath, "utf8"))
+    : null;
+
+  mkdirSync(reportsDir, { recursive: true });
+
+  const summaryCards = [
+    frontendSummary
+      ? buildSummaryCard("Frontend Tests", `${frontendSummary.passed}/${frontendSummary.tests}`, "good")
+      : buildSummaryCard("Frontend Tests", "Not generated", "warn"),
+    backendSummary
+      ? buildSummaryCard("Backend Tests", `${backendSummary.passed}/${backendSummary.tests}`, "good")
+      : buildSummaryCard("Backend Tests", "Not generated", "warn"),
+  ].join("");
+
+  const reportLinks = `
+    <section class="panel">
+      <div class="report-grid">
+        <a class="report-link" href="./frontend/test-report.html" target="report-frame">
+          <strong>Frontend Tests</strong>
+          <span class="muted">${frontendSummary ? `${frontendSummary.tests} tests` : "Generate frontend report first"}</span>
+        </a>
+        <a class="report-link" href="./backend/test-report.html" target="report-frame">
+          <strong>Backend Tests</strong>
+          <span class="muted">${backendSummary ? `${backendSummary.tests} tests` : "Generate backend report first"}</span>
+        </a>
+      </div>
+      <div class="toolbar">
+        <label for="report-select"><strong>Select report:</strong></label>
+        <select id="report-select">
+          <option value="./frontend/test-report.html">Frontend tests</option>
+          <option value="./backend/test-report.html">Backend tests</option>
+        </select>
+      </div>
+    </section>
+    <section class="panel">
+      <iframe id="report-frame" name="report-frame" src="./frontend/test-report.html" title="AgroChain reports"></iframe>
+    </section>
+    <script>
+      const select = document.getElementById("report-select");
+      const frame = document.getElementById("report-frame");
+      select.addEventListener("change", () => {
+        frame.src = select.value;
+      });
+    </script>
+  `;
+
+  const dashboardHtml = renderPage({
+    title: "AgroChain Reports Dashboard",
+    subtitle: "Use the dropdown to switch between frontend and backend test reports.",
+    summaryCards,
+    content: reportLinks,
+  });
+
+  writeFileSync(path.join(reportsDir, "index.html"), dashboardHtml, "utf8");
+}

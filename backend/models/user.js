@@ -196,8 +196,12 @@ const userSchema = new mongoose.Schema({
 // ===========================
 // INDEXES FOR PERFORMANCE
 // ===========================
+userSchema.index({ role: 1, email: 1 });
+userSchema.index({ role: 1, createdAt: -1 });
 userSchema.index({ role: 1 });
 userSchema.index({ "crops.verificationStatus": 1 });
+userSchema.index({ role: 1, "crops.batchId": 1 });
+userSchema.index({ role: 1, "crops.claimedBy": 1, "crops.verificationStatus": 1 });
 userSchema.index({ "inventory.productId": 1 });
 
 // NEW: Full-Text Search Index (The "Solr" Alternative)

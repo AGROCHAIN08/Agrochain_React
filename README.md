@@ -181,9 +181,11 @@ node scripts/run-frontend-tests.mjs
 Generated artifacts:
 
 - `reports/backend/junit.xml`
+- `reports/backend/test-report.html`
 - `reports/backend/coverage/raw/`
 - `reports/frontend/test-report.html`
 - `reports/frontend/coverage/lcov-report/index.html`
+- `reports/index.html`
 
 If you prefer package scripts on Windows PowerShell, use `npm.cmd run test:report`.
 
@@ -222,6 +224,32 @@ To stop everything:
 ```bash
 docker compose down
 ```
+
+---
+
+## Performance Report
+
+To generate the optimization report for database indexing, query planning, and Redis cache speedup:
+
+```bash
+docker compose up -d redis
+node backend/scripts/generate-optimization-report.js
+```
+
+Generated artifact:
+
+- `reports/performance/optimization-report.md`
+- `reports/performance/optimization-report.html`
+
+This report uses the current MongoDB data and a running Redis instance to show:
+
+- which index MongoDB chose for the search query
+- how many documents/keys were examined
+- average uncached MongoDB time vs cached Redis time
+
+You can open the combined dashboard here:
+
+- `reports/index.html`
 
 ---
 

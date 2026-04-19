@@ -415,40 +415,50 @@ exports.rejectBid = async (req, res, next) => {
 exports.getFarmerOrders = async (req, res, next) => {
   try {
     const orders = await Order.find({ farmerEmail: req.params.email })
-      .sort({ assignedDate: -1 });
+      .sort({ assignedDate: -1 })
+      .lean();
 
-    const populatedOrders = [];
-    
-    for (let order of orders) {
-      const dealer = await User.findOne({ email: order.dealerEmail, role: "dealer" });
-      const vehicle = dealer?.vehicles.id(order.vehicleId);
+    const farmer = await User.findOne({ email: req.params.email, role: "farmer" })
+      .select("email crops")
+      .lean();
 
-      const farmer = await User.findOne({ email: order.farmerEmail, role: "farmer" });
-      
-      let product = null;
-      if (farmer && farmer.crops) {
-        farmer.crops.forEach(crop => {
-          if (crop._id.toString() === order.productId.toString()) {
-            product = crop;
-          }
-        });
+    const dealerEmails = [...new Set(orders.map((order) => order.dealerEmail))];
+    const dealers = await User.find({
+      role: "dealer",
+      email: { $in: dealerEmails }
+    })
+      .select("email firstName lastName businessName mobile vehicles")
+      .lean();
+
+    const dealerMap = new Map(dealers.map((dealer) => [dealer.email, dealer]));
+    const productMap = new Map(
+      (farmer?.crops || []).map((crop) => [crop._id.toString(), crop])
+    );
+
+    const populatedOrders = orders.flatMap((order) => {
+      const dealer = dealerMap.get(order.dealerEmail);
+      const vehicle = dealer?.vehicles?.find(
+        (dealerVehicle) => dealerVehicle._id.toString() === order.vehicleId.toString()
+      );
+      const product = productMap.get(order.productId.toString());
+
+      if (!dealer || !vehicle || !product) {
+        return [];
       }
 
-      if (dealer && farmer && vehicle && product) {
-        populatedOrders.push({
-          ...order.toObject(),
-          vehicleDetails: vehicle,
-          dealerDetails: {
-            firstName: dealer.firstName,
-            lastName: dealer.lastName,
-            businessName: dealer.businessName,
-            mobile: dealer.mobile,
-            email: dealer.email
-          },
-          productDetails: product
-        });
-      }
-    }
+      return [{
+        ...order,
+        vehicleDetails: vehicle,
+        dealerDetails: {
+          firstName: dealer.firstName,
+          lastName: dealer.lastName,
+          businessName: dealer.businessName,
+          mobile: dealer.mobile,
+          email: dealer.email
+        },
+        productDetails: product
+      }];
+    });
 
     res.json(populatedOrders);
   } catch (err) {

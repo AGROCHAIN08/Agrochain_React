@@ -177,24 +177,22 @@ exports.getAllProducts = async (req, res, next) => {
     const farmers = await User.find({ 
       role: "farmer", 
       crops: { $exists: true, $not: { $size: 0 } }
-    });
+    })
+      .select("email firstName lastName mobile farmLocation crops")
+      .lean();
 
-    let allProducts = [];
-
-    farmers.forEach(farmer => {
-      if (farmer.crops && farmer.crops.length > 0) {
-        farmer.crops.forEach(crop => {
-          allProducts.push({
+    const allProducts = farmers.flatMap((farmer) =>
+      Array.isArray(farmer.crops)
+        ? farmer.crops.map((crop) => ({
             _id: crop._id,
-            ...crop.toObject(),
+            ...crop,
             farmerEmail: farmer.email,
             farmerName: `${farmer.firstName} ${farmer.lastName || ''}`.trim(),
             farmerMobile: farmer.mobile,
             farmerLocation: farmer.farmLocation
-          });
-        });
-      }
-    });
+          }))
+        : []
+    );
 
     allProducts.sort((a, b) => new Date(b.dateAdded || 0) - new Date(a.dateAdded || 0));
 
@@ -442,38 +440,46 @@ exports.placeBid = async (req, res, next) => {
 exports.getDealerOrders = async (req, res, next) => {
   try {
     const orders = await Order.find({ dealerEmail: req.params.email })
-      .sort({ assignedDate: -1 });
+      .sort({ assignedDate: -1 })
+      .lean();
 
-    const populatedOrders = [];
-    
-    for (let order of orders) {
-      const dealer = await User.findOne({ email: order.dealerEmail, role: "dealer" });
-      const vehicle = dealer?.vehicles.id(order.vehicleId);
+    const dealer = await User.findOne({ email: req.params.email, role: "dealer" })
+      .select("email vehicles")
+      .lean();
 
-      const farmer = await User.findOne({ email: order.farmerEmail, role: "farmer" });
-      let product = null;
-      
-      if (farmer && farmer.crops) {
-        farmer.crops.forEach(crop => {
-          if (crop._id.toString() === order.productId.toString()) {
-            product = crop;
-          }
-        });
+    const farmerEmails = [...new Set(orders.map((order) => order.farmerEmail))];
+    const farmers = await User.find({
+      role: "farmer",
+      email: { $in: farmerEmails }
+    })
+      .select("email firstName lastName mobile crops")
+      .lean();
+
+    const farmerMap = new Map(farmers.map((farmer) => [farmer.email, farmer]));
+    const vehicleMap = new Map((dealer?.vehicles || []).map((vehicle) => [vehicle._id.toString(), vehicle]));
+
+    const populatedOrders = orders.flatMap((order) => {
+      const vehicle = vehicleMap.get(order.vehicleId.toString());
+      const farmer = farmerMap.get(order.farmerEmail);
+      const product = farmer?.crops?.find(
+        (crop) => crop._id.toString() === order.productId.toString()
+      );
+
+      if (!dealer || !farmer || !vehicle || !product) {
+        return [];
       }
 
-      if (dealer && farmer && vehicle && product) {
-        populatedOrders.push({
-          ...order.toObject(),
-          vehicleDetails: vehicle,
-          farmerDetails: {
-            firstName: farmer.firstName,
-            lastName: farmer.lastName,
-            mobile: farmer.mobile
-          },
-          productDetails: product
-        });
-      }
-    }
+      return [{
+        ...order,
+        vehicleDetails: vehicle,
+        farmerDetails: {
+          firstName: farmer.firstName,
+          lastName: farmer.lastName,
+          mobile: farmer.mobile
+        },
+        productDetails: product
+      }];
+    });
 
     res.json(populatedOrders);
   } catch (err) {

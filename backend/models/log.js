@@ -10,4 +10,8 @@ const logSchema = new mongoose.Schema({
   timestamp: { type: Date, default: Date.now },
 });
 
+logSchema.index({ userEmail: 1, timestamp: -1 });
+logSchema.index({ actionType: 1, timestamp: -1 });
+logSchema.index({ timestamp: -1 });
+
 module.exports = mongoose.model("Log", logSchema);
