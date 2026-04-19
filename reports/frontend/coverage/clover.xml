@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1776604448711" clover="3.2.0">
-  <project timestamp="1776604448711" name="All files">
-    <metrics statements="1569" coveredstatements="79" conditionals="1464" coveredconditionals="18" methods="560" coveredmethods="27" elements="3593" coveredelements="124" complexity="0" loc="1569" ncloc="1569" packages="8" files="26" classes="26"/>
+<coverage generated="1776607300019" clover="3.2.0">
+  <project timestamp="1776607300019" name="All files">
+    <metrics statements="1570" coveredstatements="79" conditionals="1466" coveredconditionals="18" methods="560" coveredmethods="27" elements="3596" coveredelements="124" complexity="0" loc="1570" ncloc="1570" packages="8" files="26" classes="26"/>
     <package name="src">
       <metrics statements="4" coveredstatements="0" conditionals="0" coveredconditionals="0" methods="1" coveredmethods="0"/>
       <file name="App.js" path="C:\Users\bsrim\OneDrive\Desktop\Agrochain_React\frontend\agrochain-client\src\App.js">
@@ -1655,22 +1655,23 @@
       </file>
     </package>
     <package name="src.services">
-      <metrics statements="13" coveredstatements="0" conditionals="6" coveredconditionals="0" methods="4" coveredmethods="0"/>
+      <metrics statements="14" coveredstatements="0" conditionals="8" coveredconditionals="0" methods="4" coveredmethods="0"/>
       <file name="api.jsx" path="C:\Users\bsrim\OneDrive\Desktop\Agrochain_React\frontend\agrochain-client\src\services\api.jsx">
-        <metrics statements="13" coveredstatements="0" conditionals="6" coveredconditionals="0" methods="4" coveredmethods="0"/>
-        <line num="3" count="0" type="stmt"/>
-        <line num="11" count="0" type="stmt"/>
+        <metrics statements="14" coveredstatements="0" conditionals="8" coveredconditionals="0" methods="4" coveredmethods="0"/>
+        <line num="3" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="5" count="0" type="stmt"/>
         <line num="13" count="0" type="stmt"/>
-        <line num="14" count="0" type="cond" truecount="0" falsecount="2"/>
         <line num="15" count="0" type="stmt"/>
+        <line num="16" count="0" type="cond" truecount="0" falsecount="2"/>
         <line num="17" count="0" type="stmt"/>
-        <line num="20" count="0" type="stmt"/>
-        <line num="25" count="0" type="stmt"/>
-        <line num="26" count="0" type="stmt"/>
-        <line num="28" count="0" type="cond" truecount="0" falsecount="4"/>
-        <line num="29" count="0" type="stmt"/>
-        <line num="30" count="0" type="stmt"/>
+        <line num="19" count="0" type="stmt"/>
+        <line num="22" count="0" type="stmt"/>
+        <line num="27" count="0" type="stmt"/>
+        <line num="28" count="0" type="stmt"/>
+        <line num="30" count="0" type="cond" truecount="0" falsecount="4"/>
+        <line num="31" count="0" type="stmt"/>
         <line num="32" count="0" type="stmt"/>
+        <line num="34" count="0" type="stmt"/>
       </file>
     </package>
   </project>

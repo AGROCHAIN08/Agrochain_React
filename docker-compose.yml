@@ -1,0 +1,40 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    env_file:
+      - ./backend/.env
+    environment:
+      PORT: 3000
+      REDIS_URL: redis://redis:6379
+    ports:
+      - "3000:3000"
+    depends_on:
+      - redis
+    volumes:
+      - backend-logs:/app/logs
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend/agrochain-client
+      dockerfile: Dockerfile
+      args:
+        REACT_APP_API_URL: /api
+    ports:
+      - "3001:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--save", "60", "1", "--loglevel", "warning"]
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+
+volumes:
+  backend-logs:
+  redis-data:

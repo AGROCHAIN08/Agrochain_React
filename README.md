@@ -189,4 +189,40 @@ If you prefer package scripts on Windows PowerShell, use `npm.cmd run test:repor
 
 ---
 
+## Docker
+
+The project is now containerized with:
+
+- `backend/Dockerfile` for the Node/Express API
+- `frontend/agrochain-client/Dockerfile` for the React app served by Nginx
+- `docker-compose.yml` for the full stack
+
+The frontend container proxies `/api` to the backend container, so the browser only needs to talk to `http://localhost:3001`.
+
+From the repository root:
+
+```bash
+docker compose up --build
+```
+
+Services:
+
+- Frontend: `http://localhost:3001`
+- Backend API: `http://localhost:3000`
+- Swagger docs: `http://localhost:3000/api-docs`
+
+Notes:
+
+- Compose reads backend environment variables from `backend/.env`.
+- Redis is included as an internal cache service.
+- MongoDB still comes from your configured `MONGO_URI`.
+
+To stop everything:
+
+```bash
+docker compose down
+```
+
+---
+
 **Developed by AgroChain team using Node.js, Express, MongoDB, and React.**
