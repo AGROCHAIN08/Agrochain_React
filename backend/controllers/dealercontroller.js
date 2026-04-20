@@ -10,8 +10,14 @@ const redisClient = require("../config/redis");
 // Get Dealer Profile
 exports.getDealerProfile = async (req, res, next) => {
   try {
+    const cacheKey = `dealer_prof_${req.params.email}`;
+    if (redisClient.isReady) {
+      const cached = await redisClient.get(cacheKey);
+      if (cached) return res.json(JSON.parse(cached));
+    }
     const dealer = await User.findOne({ email: req.params.email, role: "dealer" });
     if (!dealer) return res.status(404).json({ msg: "Dealer not found" });
+    if (redisClient.isReady) await redisClient.setEx(cacheKey, 60, JSON.stringify(dealer));
     res.json(dealer);
   } catch (err) {
     next(err);
@@ -27,6 +33,7 @@ exports.updateDealerProfile = async (req, res, next) => {
       { new: true }
     );
     if (!dealer) return res.status(404).json({ msg: "Dealer not found" });
+    if (redisClient.isReady) await redisClient.del(`dealer_prof_${req.params.email}`);
     res.json(dealer);
   } catch (err) {
     next(err);
@@ -81,6 +88,7 @@ exports.addVehicle = async (req, res, next) => {
     dealer.vehicles.push(newVehicle);
     await dealer.save();
 
+    if (redisClient.isReady) await redisClient.del(`dealer_vehicles_${req.params.email}`);
     res.json({ 
       msg: "Vehicle added successfully", 
       vehicle: newVehicle 
@@ -94,12 +102,19 @@ exports.addVehicle = async (req, res, next) => {
 // Get All Vehicles for a Dealer
 exports.getVehicles = async (req, res, next) => {
   try {
+    const cacheKey = `dealer_vehicles_${req.params.email}`;
+    if (redisClient.isReady) {
+      const cached = await redisClient.get(cacheKey);
+      if (cached) return res.json(JSON.parse(cached));
+    }
+
     const dealer = await User.findOne({ email: req.params.email, role: "dealer" });
     if (!dealer) return res.status(404).json({ msg: "Dealer not found" });
 
     const vehicles = dealer.vehicles || [];
     vehicles.sort((a, b) => new Date(b.dateAdded || 0) - new Date(a.dateAdded || 0));
     
+    if (redisClient.isReady) await redisClient.setEx(cacheKey, 60, JSON.stringify(vehicles));
     res.json(vehicles);
   } catch (err) {
      next(err);
@@ -126,6 +141,7 @@ exports.updateVehicleStatus = async (req, res, next) => {
     
     await dealer.save();
 
+    if (redisClient.isReady) await redisClient.del(`dealer_vehicles_${email}`);
     res.json({ 
       msg: "Vehicle status updated successfully",
       vehicle 
@@ -160,6 +176,7 @@ exports.deleteVehicle = async (req, res, next) => {
     dealer.vehicles.splice(vehicleIndex, 1);
     await dealer.save();
 
+    if (redisClient.isReady) await redisClient.del(`dealer_vehicles_${email}`);
     res.json({ msg: "Vehicle deleted successfully" });
 
   } catch (err) {
@@ -174,6 +191,12 @@ exports.deleteVehicle = async (req, res, next) => {
 // Get All Available Products from All Farmers
 exports.getAllProducts = async (req, res, next) => {
   try {
+    const cacheKey = "dealer_browse_products";
+    if (redisClient.isReady) {
+      const cached = await redisClient.get(cacheKey);
+      if (cached) return res.json(JSON.parse(cached));
+    }
+
     const farmers = await User.find({ 
       role: "farmer", 
       "crops.verificationStatus": "approved"
@@ -201,6 +224,7 @@ exports.getAllProducts = async (req, res, next) => {
 
     allProducts.sort((a, b) => new Date(b.dateAdded || 0) - new Date(a.dateAdded || 0));
 
+    if (redisClient.isReady) await redisClient.setEx(cacheKey, 60, JSON.stringify(allProducts));
     res.json(allProducts);
   } catch (err) {
    next(err);
@@ -303,6 +327,11 @@ exports.assignVehicle = async (req, res, next) => {
     const newOrder = new Order(orderData);
     await newOrder.save();
 
+    if (redisClient.isReady) {
+      await redisClient.del(`dealer_orders_${dealerEmail}`);
+      await redisClient.del(`dealer_vehicles_${dealerEmail}`);
+    }
+
     res.json({ 
       msg: "Vehicle assigned successfully",
       orderId: newOrder._id,
@@ -368,6 +397,7 @@ exports.freeVehicle = async (req, res, next) => {
       }
     }
 
+    if (redisClient.isReady) await redisClient.del(`dealer_vehicles_${email}`);
     res.json({ 
       msg: "Vehicle freed successfully",
       vehicle: dealer.vehicles[vehicleIndex]
@@ -426,6 +456,7 @@ exports.placeBid = async (req, res, next) => {
       await farmer.save();
     }
 
+    if (redisClient.isReady) await redisClient.del(`dealer_orders_${order.dealerEmail}`);
     res.json({ 
       msg: "Bid placed successfully",
       order,
@@ -444,6 +475,12 @@ exports.placeBid = async (req, res, next) => {
 // Get All Orders for a Dealer
 exports.getDealerOrders = async (req, res, next) => {
   try {
+    const cacheKey = `dealer_orders_${req.params.email}`;
+    if (redisClient.isReady) {
+      const cached = await redisClient.get(cacheKey);
+      if (cached) return res.json(JSON.parse(cached));
+    }
+
     const orders = await Order.find({ dealerEmail: req.params.email })
       .sort({ assignedDate: -1 })
       .lean();
@@ -486,6 +523,7 @@ exports.getDealerOrders = async (req, res, next) => {
       }];
     });
 
+    if (redisClient.isReady) await redisClient.setEx(cacheKey, 60, JSON.stringify(populatedOrders));
     res.json(populatedOrders);
   } catch (err) {
     next(err);

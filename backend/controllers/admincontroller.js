@@ -3,12 +3,19 @@ const Order = require("../models/order");
 const RetailerOrder = require("../models/retailerOrder");
 const Log = require("../models/log");
 const Representative = require("../models/representative");
+const redisClient = require("../config/redis");
 
 /* ===============================
    1. ENHANCED SYSTEM ANALYTICS
    =============================== */
 exports.getStats = async (req, res) => {
   try {
+    const cacheKey = "admin_stats";
+    if (redisClient.isReady) {
+      const cached = await redisClient.get(cacheKey);
+      if (cached) return res.json(JSON.parse(cached));
+    }
+
     // Count users by role
     const farmers = await User.countDocuments({ role: "farmer" });
     const dealers = await User.countDocuments({ role: "dealer" });
@@ -164,7 +171,7 @@ exports.getStats = async (req, res) => {
     // Top products
     const topProducts = await getTopProducts(allFarmers);
 
-    res.json({
+    const statsData = {
       // Core stats
       farmers,
       dealers,
@@ -195,7 +202,9 @@ exports.getStats = async (req, res) => {
       emailVerificationRate,
       verifiedEmailUsers,
       googleAuthUsers,
-    });
+    };
+    if (redisClient.isReady) await redisClient.setEx(cacheKey, 300, JSON.stringify(statsData));
+    res.json(statsData);
   } catch (err) {
     console.error("Error fetching analytics:", err);
     res.status(500).json({ msg: "Error fetching analytics" });
@@ -320,11 +329,18 @@ function getTopProducts(farmers) {
 
 exports.getUsers = async (req, res) => {
   try {
+    const cacheKey = "admin_users";
+    if (redisClient.isReady) {
+      const cached = await redisClient.get(cacheKey);
+      if (cached) return res.json(JSON.parse(cached));
+    }
+
     const users = await User.find(
       {},
       "firstName lastName email role mobile isActive"
     ).sort({ role: 1, createdAt: -1 });
     
+    if (redisClient.isReady) await redisClient.setEx(cacheKey, 60, JSON.stringify(users));
     res.json(users);
   } catch (err) {
     console.error("Error fetching users:", err);
@@ -343,6 +359,7 @@ exports.deleteUser = async (req, res) => {
     // Log the deletion
     await createLog(user.email, "deleteUser", `Admin deleted user: ${user.email}`);
     
+    if (redisClient.isReady) await redisClient.del("admin_users");
     res.json({ msg: "User deleted successfully" });
   } catch (err) {
     console.error("Error deleting user:", err);
@@ -366,7 +383,9 @@ exports.deactivateUser = async (req, res) => {
     const action = user.isActive ? "activated" : "deactivated";
     await createLog(user.email, "updateProfile", `Admin ${action} user: ${user.email}`);
     
+    if (redisClient.isReady) await redisClient.del("admin_users");
     res.json({ 
+
       msg: `User ${action} successfully`,
       isActive: user.isActive
     });
@@ -434,6 +453,12 @@ exports.createLog = createLog;
 // Get user growth over time
 exports.getUserGrowth = async (req, res) => {
   try {
+    const cacheKey = "admin_growth";
+    if (redisClient.isReady) {
+      const cached = await redisClient.get(cacheKey);
+      if (cached) return res.json(JSON.parse(cached));
+    }
+
     const sixMonthsAgo = new Date();
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
     
@@ -456,6 +481,7 @@ exports.getUserGrowth = async (req, res) => {
       { $sort: { "_id.year": 1, "_id.month": 1 } }
     ]);
     
+    if (redisClient.isReady) await redisClient.setEx(cacheKey, 300, JSON.stringify(growth));
     res.json(growth);
   } catch (err) {
     console.error("Error fetching user growth:", err);
@@ -466,6 +492,12 @@ exports.getUserGrowth = async (req, res) => {
 // Get platform activity summary
 exports.getActivitySummary = async (req, res) => {
   try {
+    const cacheKey = "admin_activity";
+    if (redisClient.isReady) {
+      const cached = await redisClient.get(cacheKey);
+      if (cached) return res.json(JSON.parse(cached));
+    }
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
@@ -485,11 +517,13 @@ exports.getActivitySummary = async (req, res) => {
       timestamp: { $gte: today }
     });
     
-    res.json({
+    const summaryData = {
       todayLogs,
       todayOrders: todayOrders + todayRetailerOrders,
       activeUsersToday: activeUsersToday.length
-    });
+    };
+    if (redisClient.isReady) await redisClient.setEx(cacheKey, 300, JSON.stringify(summaryData));
+    res.json(summaryData);
   } catch (err) {
     console.error("Error fetching activity summary:", err);
     res.status(500).json({ msg: "Error fetching activity summary" });
@@ -503,6 +537,12 @@ exports.getActivitySummary = async (req, res) => {
 
 exports.getAllProducts = async (req, res) => {
   try {
+    const cacheKey = "admin_all_products";
+    if (redisClient.isReady) {
+      const cached = await redisClient.get(cacheKey);
+      if (cached) return res.json(JSON.parse(cached));
+    }
+
     // Fetch only farmers with their crops + basic info
     const farmers = await User.find(
       { role: "farmer" },
@@ -534,6 +574,7 @@ exports.getAllProducts = async (req, res) => {
       }
     });
 
+    if (redisClient.isReady) await redisClient.setEx(cacheKey, 60, JSON.stringify(products));
     res.json(products);
   } catch (err) {
     console.error("Error fetching all products:", err);
@@ -569,6 +610,7 @@ exports.adminDeleteProduct = async (req, res) => {
       `ADMIN ACTION: Product "${removed.varietySpecies}" (${removed.productType}) deleted for farmer ${farmer.email}`
     );
 
+    if (redisClient.isReady) await redisClient.del("admin_all_products");
     res.json({ msg: "Product deleted successfully by admin" });
   } catch (err) {
     console.error("Error deleting product as admin:", err);

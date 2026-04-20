@@ -1,5 +1,6 @@
 const User = require("../models/user");
 const Order = require("../models/order");
+const redisClient = require("../config/redis");
 
 // Generate unique receipt number
 function generateReceiptNumber() {
@@ -14,8 +15,14 @@ function generateReceiptNumber() {
 // ---------- Get Farmer Profile ----------
 exports.getFarmerProfile = async (req, res, next) => {
   try {
+    const cacheKey = `farmer_prof_${req.params.email}`;
+    if (redisClient.isReady) {
+      const cached = await redisClient.get(cacheKey);
+      if (cached) return res.json(JSON.parse(cached));
+    }
     const farmer = await User.findOne({ email: req.params.email, role: "farmer" });
     if (!farmer) return res.status(404).json({ msg: "Farmer not found" });
+    if (redisClient.isReady) await redisClient.setEx(cacheKey, 60, JSON.stringify(farmer));
     res.json(farmer);
   } catch (err) {
     next(err); // Pass error to error middleware
@@ -31,6 +38,7 @@ exports.updateFarmerProfile = async (req, res, next) => {
       { new: true }
     );
     if (!farmer) return res.status(404).json({ msg: "Farmer not found" });
+    if (redisClient.isReady) await redisClient.del(`farmer_prof_${req.params.email}`);
     res.json(farmer);
   } catch (err) {
     next(err); // Pass error to error middleware
@@ -80,6 +88,7 @@ exports.addCrop = async (req, res, next) => {
     farmer.crops.push(newCrop);
     await farmer.save();
 
+    if (redisClient.isReady) await redisClient.del(`farmer_crops_${req.params.email}`);
     res.json({ msg: "Product submitted for verification", crop: newCrop });
   } catch (err) {
     next(err);
@@ -136,6 +145,7 @@ exports.addBulkCrops = async (req, res, next) => {
     farmer.crops.push(...newCrops);
     await farmer.save();
 
+    if (redisClient.isReady) await redisClient.del(`farmer_crops_${req.params.email}`);
     res.json({ msg: `${newCrops.length} product(s) submitted for verification`, crops: newCrops, batchId });
   } catch (err) {
     next(err);
@@ -145,12 +155,19 @@ exports.addBulkCrops = async (req, res, next) => {
 // ---------- Get Crops ----------
 exports.getCrops = async (req, res, next) => {
   try {
+    const cacheKey = `farmer_crops_${req.params.email}`;
+    if (redisClient.isReady) {
+      const cached = await redisClient.get(cacheKey);
+      if (cached) return res.json(JSON.parse(cached));
+    }
+
     const farmer = await User.findOne({ email: req.params.email, role: "farmer" });
     if (!farmer) return res.status(404).json({ msg: "Farmer not found" });
 
     const crops = farmer.crops || [];
     crops.sort((a, b) => new Date(b.dateAdded || 0) - new Date(a.dateAdded || 0));
     
+    if (redisClient.isReady) await redisClient.setEx(cacheKey, 60, JSON.stringify(crops));
     res.json(crops);
   } catch (err) {
     next(err); // Pass error to error middleware
@@ -211,6 +228,7 @@ exports.updateCrop = async (req, res, next) => {
 
     await farmer.save();
 
+    if (redisClient.isReady) await redisClient.del(`farmer_crops_${req.params.email}`);
     res.json({
       msg: "Product updated successfully",
       crop
@@ -263,6 +281,7 @@ exports.deleteCrop = async (req, res, next) => {
     farmer.crops.splice(cropIndex, 1);
     await farmer.save();
 
+    if (redisClient.isReady) await redisClient.del(`farmer_crops_${req.params.email}`);
     res.json({ msg: "Product deleted successfully" });
     
   } catch (err) {
@@ -334,6 +353,7 @@ exports.acceptBid = async (req, res, next) => {
     });
     await dealer.save();
 
+    if (redisClient.isReady) await redisClient.del(`farmer_orders_${req.params.email}`);
     res.json({
       msg: "Bid accepted successfully. Dealer must complete payment via Stripe.",
       receiptNumber,
@@ -401,6 +421,7 @@ exports.rejectBid = async (req, res, next) => {
       await dealer.save();
     }
 
+    if (redisClient.isReady) await redisClient.del(`farmer_orders_${req.params.email}`);
     res.json({ 
       msg: "Bid rejected successfully",
       order
@@ -414,6 +435,12 @@ exports.rejectBid = async (req, res, next) => {
 // ---------- Get Farmer Orders ----------
 exports.getFarmerOrders = async (req, res, next) => {
   try {
+    const cacheKey = `farmer_orders_${req.params.email}`;
+    if (redisClient.isReady) {
+      const cached = await redisClient.get(cacheKey);
+      if (cached) return res.json(JSON.parse(cached));
+    }
+
     const orders = await Order.find({ farmerEmail: req.params.email })
       .sort({ assignedDate: -1 })
       .lean();
@@ -460,6 +487,7 @@ exports.getFarmerOrders = async (req, res, next) => {
       }];
     });
 
+    if (redisClient.isReady) await redisClient.setEx(cacheKey, 60, JSON.stringify(populatedOrders));
     res.json(populatedOrders);
   } catch (err) {
     next(err); // Pass error to error middleware

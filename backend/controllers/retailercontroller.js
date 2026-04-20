@@ -5,6 +5,12 @@ const redisClient = require("../config/redis");
 // Get All Products from All Dealer Inventories
 exports.getDealerInventories = async (req, res, next) => {
   try {
+    const cacheKey = "retailer_dealer_inventories";
+    if (redisClient.isReady) {
+      const cached = await redisClient.get(cacheKey);
+      if (cached) return res.json(JSON.parse(cached));
+    }
+
     const dealers = await User.find({
       role: "dealer",
       inventory: { $exists: true, $not: { $size: 0 } },
@@ -27,6 +33,7 @@ exports.getDealerInventories = async (req, res, next) => {
     allInventory.sort((a, b) => new Date(b.addedDate || 0) - new Date(a.addedDate || 0));
     
     console.log('Sample inventory item with reviews:', allInventory[0]?.retailerReviews); // Debug log
+    if (redisClient.isReady) await redisClient.setEx(cacheKey, 60, JSON.stringify(allInventory));
     res.json(allInventory);
   } catch (err) {
      next(err);
@@ -95,6 +102,7 @@ exports.placeOrder = async (req, res, next) => {
       createdOrders.push(savedOrder);
     }
     
+    if (redisClient.isReady) await redisClient.del(`retailer_orders_${retailerEmail}`);
     res.status(201).json({ msg: "Order(s) placed successfully!", orders: createdOrders });
   } catch (err) {
    next(err);
@@ -105,7 +113,14 @@ exports.placeOrder = async (req, res, next) => {
 exports.getOrders = async (req, res, next) => {
     try {
         const retailerEmail = req.params.email;
+        const cacheKey = `retailer_orders_${retailerEmail}`;
+        if (redisClient.isReady) {
+          const cached = await redisClient.get(cacheKey);
+          if (cached) return res.json(JSON.parse(cached));
+        }
+
         const orders = await RetailerOrder.find({ retailerEmail }).sort({ createdAt: -1 });
+        if (redisClient.isReady) await redisClient.setEx(cacheKey, 60, JSON.stringify(orders));
         res.json(orders);
     } catch (err) {
       next(err);
@@ -154,6 +169,7 @@ exports.updateOrder = async (req, res) => {
     }
 
     const updatedOrder = await order.save();
+    if (redisClient.isReady) await redisClient.del(`retailer_orders_${order.retailerEmail}`);
     res.json({ msg: "Order updated successfully", order: updatedOrder });
 
   } catch (err) {
@@ -233,6 +249,7 @@ exports.completePayment = async (req, res) => {
     order.paymentDetails.stripeSessionId = session.id;
     await order.save();
 
+    if (redisClient.isReady) await redisClient.del(`retailer_orders_${order.retailerEmail}`);
     res.json({ 
       msg: "Stripe checkout session created", 
       sessionId: session.id,
@@ -360,6 +377,12 @@ exports.submitReview = async (req, res) => {
 
     await order.save();
     console.log("Order marked as reviewed");
+
+    if (redisClient.isReady) {
+      await redisClient.del(`retailer_orders_${retailerEmail}`);
+      await redisClient.del("retailer_dealer_inventories");
+      await redisClient.del("all_available_products");
+    }
 
     res.json({ 
       msg: "Review submitted successfully",
