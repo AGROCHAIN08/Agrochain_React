@@ -18,47 +18,53 @@ html {
 /* === END FIX === */
 
 
-/* Navbar Styling - Enhanced for Mobile */
-.navbar {
+/* Navbar Styling - Modern Glassy */
+.agro-navbar {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background-color: white;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
     color: white;
-    padding: 5px 30px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    padding: 10px 30px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
     position: sticky;
     top: 0;
     z-index: 1000;
-    flex-wrap: wrap;
     min-height: 70px;
-  height: auto;
 }
 
-.nav-left {
+.agro-nav-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.agro-nav-left {
     display: flex;
     align-items: center;
     gap: 10px;
+    text-decoration: none;
 }
 
-.logo {
+.agro-logo {
     width: 45px;
     height: 45px;
 }
 
 /* MODIFIED: brand-name to use a span for 'Chain' for split color */
-.brand-name {
+.agro-brand-name {
     font-size: 1.6em;
     font-weight: 700;
     color: #FFD700; /* Default color for the first part (Agro) */
 }
 /* ADDED: Style for the 'Chain' part of the brand name */
-.brand-name .chain-text {
+.agro-brand-name .agro-chain-text {
     color: #42b148; 
 }
 
 /* Mobile Menu Toggle Button */
-.mobile-menu-toggle {
+.agro-mobile-toggle {
     display: none;
     background: none;
     border: none;
@@ -68,13 +74,19 @@ html {
     padding: 5px;
 }
 
-.nav-center {
+.agro-nav-menu {
+    display: flex;
+    align-items: center;
+    gap: 30px;
+}
+
+.agro-nav-center {
     display: flex;
     gap: 30px;
     align-items: center;
 }
 
-.nav-center .nav-link {
+.agro-nav-center .agro-nav-link {
     color: #33a538; /* MODIFIED: Set link color to yellow */
     text-decoration: none;
     font-size: 1.05em;
@@ -83,7 +95,7 @@ html {
     position: relative;
 }
 
-.nav-center .nav-link::after {
+.agro-nav-center .agro-nav-link::after {
     content: '';
     position: absolute;
     width: 0;
@@ -94,17 +106,17 @@ html {
     transition: width 0.3s ease;
 }
 
-.nav-center .nav-link:hover::after {
+.agro-nav-center .agro-nav-link:hover::after {
     width: 100%;
 }
 
-.nav-right {
+.agro-nav-right {
     display: flex;
     gap: 10px;
     align-items: center;
 }
 
-.nav-right .btn {
+.agro-nav-right .agro-btn {
     background-color: white;
     color: #1b5e20;
     border: 2px solid white;
@@ -117,18 +129,18 @@ html {
     white-space: nowrap;
 }
 
-.nav-right .btn:hover {
+.agro-nav-right .agro-btn:hover {
     background-color: transparent;
     color: white;
 }
 
-.nav-right .btn-signup {
+.agro-nav-right .agro-btn-signup {
     background-color: #4caf50;
     color: white;
     border: 2px solid #4caf50;
 }
 
-.nav-right .btn-signup:hover {
+.agro-nav-right .agro-btn-signup:hover {
     background-color: #66bb6a;
     border-color: #66bb6a;
 }
@@ -732,36 +744,70 @@ html {
 
 /* Small Tablet/Large Mobile - 900px and below */
 @media (max-width: 900px) {
-    .navbar {
+    .agro-navbar {
         padding: 15px 20px;
     }
+
+    .agro-nav-header {
+        width: 100%;
+    }
     
-    .mobile-menu-toggle {
+    .agro-mobile-toggle {
         display: block;
-        order: 3;
     }
-    
-    .nav-center {
-        display: none;
-        flex-basis: 100%;
+
+    .agro-nav-menu {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        width: 100%;
+        background: rgba(255, 255, 255, 0.98); /* Almost solid for readability */
+        backdrop-filter: blur(15px);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
         flex-direction: column;
+        align-items: flex-start;
+        padding: 0 20px;
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.4s ease, opacity 0.4s ease, padding 0.4s ease;
+        opacity: 0;
+        gap: 0;
+    }
+
+    .agro-nav-menu.active {
+        max-height: 400px;
+        padding: 20px;
+        opacity: 1;
+        border-top: 1px solid rgba(0, 0, 0, 0.05);
+    }
+    
+    .agro-nav-center {
+        flex-direction: column;
+        gap: 20px;
+        align-items: flex-start;
+        width: 100%;
+    }
+
+    .agro-nav-center .agro-nav-link {
+        font-size: 1.15em;
+        width: 100%;
+        display: block;
+    }
+    
+    .agro-nav-right {
+        margin-top: 25px;
+        padding-top: 20px;
+        border-top: 1px solid rgba(0,0,0,0.1);
+        width: 100%;
+        justify-content: stretch;
         gap: 15px;
-        padding: 20px 0;
-        order: 4;
     }
     
-    .nav-center.active {
-        display: flex;
-    }
-    
-    .nav-right {
-        order: 2;
-        gap: 8px;
-    }
-    
-    .nav-right .btn {
-        padding: 8px 15px;
-        font-size: 0.9em;
+    .agro-nav-right .agro-btn {
+        width: 100%;
+        text-align: center;
+        padding: 12px 15px;
+        font-size: 1.05em;
     }
     
     .hero-container-content {
@@ -816,11 +862,11 @@ html {
 
 /* Mobile View - 768px and below */
 @media (max-width: 768px) {
-    .brand-name {
+    .agro-brand-name {
         font-size: 1.4em;
     }
     
-    .logo {
+    .agro-logo {
         width: 40px;
         height: 40px;
     }
@@ -886,20 +932,20 @@ html {
 
 /* Small Mobile - 600px and below */
 @media (max-width: 600px) {
-    .navbar {
+    .agro-navbar {
         padding: 12px 15px;
     }
     
-    .brand-name {
+    .agro-brand-name {
         font-size: 1.2em;
     }
     
-    .logo {
+    .agro-logo {
         width: 35px;
         height: 35px;
     }
     
-    .nav-right .btn {
+    .agro-nav-right .agro-btn {
         padding: 6px 12px;
         font-size: 0.85em;
     }
@@ -1007,11 +1053,11 @@ html {
 
 /* Extra Small Mobile - 400px and below */
 @media (max-width: 400px) {
-    .brand-name {
+    .agro-brand-name {
         font-size: 1.1em;
     }
     
-    .logo {
+    .agro-logo {
         width: 32px;
         height: 32px;
     }
