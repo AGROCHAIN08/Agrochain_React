@@ -4,7 +4,7 @@ import api from '../services/api.jsx';
 import { useNavigate } from 'react-router-dom';
 import '../assets/css/dealer.css';
 import { useDispatch, useSelector } from 'react-redux';
-import { initializeCart, addToCart, removeFromCart, clearCart } from '../redux/slices/cartSlice';
+import { initializeCart, addToCart, removeFromCart } from '../redux/slices/cartSlice';
 
 // --- DealerNavbar Component ---
 const DealerNavbar = ({ user, cartCount, onSignout, onNavigate, activeSection }) => {
@@ -968,7 +968,6 @@ const ProductCard = ({ product, onAddToCart, qty, onQtyChange, onViewFarmer, onV
 );
 
 const VehicleCard = ({ vehicle, onDelete, onFree }) => {
-    const isTruck = vehicle.vehicleType.toLowerCase().includes('truck');
     const statusClass = vehicle.currentStatus.toLowerCase();
 
     return (

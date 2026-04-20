@@ -4,7 +4,7 @@ import api from '../services/api';
 import '../assets/css/farmer.css'; 
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { setNotifications, addNotification } from '../redux/slices/notificationSlice';
+import { setNotifications } from '../redux/slices/notificationSlice';
 
 // --- FarmerNavbar Component (from farmer.html) ---
 // THIS IS DEFINED *INSIDE* THE DASHBOARD FILE
@@ -36,16 +36,16 @@ const FarmerNavbar = ({ user, notificationCount, onSignout, onNavigate, activeSe
       
       <div className={`nav-links-container ${menuOpen ? 'active' : ''}`} id="navLinksContainer">
           <div className="nav-center">
-            <a href="#" className={activeSection === 'inventory' ? 'nav-link active' : 'nav-link'} onClick={() => onNavigate('inventory')}>
+            <a href="/farmer" className={activeSection === 'inventory' ? 'nav-link active' : 'nav-link'} onClick={(e) => { e.preventDefault(); onNavigate('inventory'); }}>
               <span className="nav-icon">🌾</span> Inventory
             </a>
-            <a href="#" className={activeSection === 'orders' ? 'nav-link active' : 'nav-link'} onClick={() => onNavigate('orders')}>
+            <a href="/farmer/orders" className={activeSection === 'orders' ? 'nav-link active' : 'nav-link'} onClick={(e) => { e.preventDefault(); onNavigate('orders'); }}>
               <span className="nav-icon">📦</span> Orders
             </a>
           </div>
           
           <div className="nav-right">
-            <a href="#" className={activeSection === 'notifications' ? 'nav-link active' : 'nav-link'} id="navNotificationBtn" onClick={() => onNavigate('notifications')}>
+            <a href="/farmer/notifications" className={activeSection === 'notifications' ? 'nav-link active' : 'nav-link'} id="navNotificationBtn" onClick={(e) => { e.preventDefault(); onNavigate('notifications'); }}>
               <span className="nav-icon">🔔</span>
               {notificationCount > 0 &&
                 <span className="notification-badge" id="notificationBadge">{notificationCount}</span>
@@ -58,11 +58,11 @@ const FarmerNavbar = ({ user, notificationCount, onSignout, onNavigate, activeSe
                 <span className="dropdown-arrow">▼</span>
               </button>
               <div className={`profile-dropdown-menu ${dropdownOpen ? 'show' : ''}`} id="profileDropdownMenu">
-                <a href="#" className="dropdown-item" id="viewProfileBtn" onClick={() => onNavigate('profile')}>
+                <a href="/farmer/profile" className="dropdown-item" id="viewProfileBtn" onClick={(e) => { e.preventDefault(); onNavigate('profile'); }}>
                   <span className="dropdown-icon">👤</span> My Profile
                 </a>
                 <div className="dropdown-divider"></div>
-                <a href="#" className="dropdown-item logout-item" id="navSignoutBtn" onClick={onSignout}>
+                <a href="/login" className="dropdown-item logout-item" id="navSignoutBtn" onClick={(e) => { e.preventDefault(); onSignout(); }}>
                   <span className="dropdown-icon">🚪</span> Sign Out
                 </a>
               </div>

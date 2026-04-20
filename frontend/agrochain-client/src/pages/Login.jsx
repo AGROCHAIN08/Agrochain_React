@@ -7,7 +7,7 @@ import { GoogleLogin } from '@react-oauth/google';
 import '../assets/css/login.css';
 
 // 👇 ADD REDUX IMPORTS
-import { useDispatch, useSelector } from 'react-redux';
+import { useDispatch } from 'react-redux';
 import { loginStart, loginSuccess, loginFailure } from '../redux/slices/authSlice';
 
 // Import the new central Navbar
@@ -17,8 +17,6 @@ import Navbar from '../components/Navbar';
 const Login = () => {
   // 👇 ADD REDUX HOOKS
   const dispatch = useDispatch();
-  const { loading: reduxLoading, error: reduxError } = useSelector((state) => state.auth);
-
   // Local state for form inputs and UI
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');

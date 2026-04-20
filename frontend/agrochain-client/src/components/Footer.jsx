@@ -26,8 +26,8 @@ const Footer = () => {
             <li><Link to="/about">About</Link></li>
             
             {/* Use <a> for links to page sections (anchor links) */}
-            <li><a href="#features">Features</a></li>
-            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="/#features">Features</a></li>
+            <li><a href="mailto:agrochain08@gmail.com?subject=Privacy%20Policy%20Request">Privacy Policy</a></li>
           </ul>
         </div>
 
@@ -42,10 +42,10 @@ const Footer = () => {
           <h3>Follow Us</h3>
           <div className="social-icons">
             {/* These are external links, so <a> is correct */}
-            <a href="#" aria-label="Facebook"><i className="fab fa-facebook-f"></i></a>
-            <a href="#" aria-label="Twitter"><i className="fab fa-twitter"></i></a>
-            <a href="#" aria-label="Instagram"><i className="fab fa-instagram"></i></a>
-            <a href="#" aria-label="LinkedIn"><i className="fab fa-linkedin-in"></i></a>
+            <a href="https://www.facebook.com/" aria-label="Facebook" target="_blank" rel="noreferrer"><i className="fab fa-facebook-f"></i></a>
+            <a href="https://x.com/" aria-label="Twitter" target="_blank" rel="noreferrer"><i className="fab fa-twitter"></i></a>
+            <a href="https://www.instagram.com/" aria-label="Instagram" target="_blank" rel="noreferrer"><i className="fab fa-instagram"></i></a>
+            <a href="https://www.linkedin.com/" aria-label="LinkedIn" target="_blank" rel="noreferrer"><i className="fab fa-linkedin-in"></i></a>
           </div>
         </div>
       </div>

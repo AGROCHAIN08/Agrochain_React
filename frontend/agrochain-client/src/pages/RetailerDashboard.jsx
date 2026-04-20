@@ -32,15 +32,15 @@ const RetailerNavbar = ({ user, cartCount, onSignout, onNavigate, activeSection 
                 <span className="brand-name">Agro<span className="chain-text">Chain</span></span>
             </div>
             <div className="nav-center">
-                <a href="#" className={`nav-link ${activeSection === 'browse' ? 'active' : ''}`} onClick={() => handleNav('browse')}>
+                <a href="/retailer" className={`nav-link ${activeSection === 'browse' ? 'active' : ''}`} onClick={(e) => { e.preventDefault(); handleNav('browse'); }}>
                     <span className="nav-icon">🛍️</span> Browse Products
                 </a>
-                <a href="#" className={`nav-link ${activeSection === 'orders' ? 'active' : ''}`} onClick={() => handleNav('orders')}>
+                <a href="/retailer/orders" className={`nav-link ${activeSection === 'orders' ? 'active' : ''}`} onClick={(e) => { e.preventDefault(); handleNav('orders'); }}>
                     <span className="nav-icon">📦</span> My Orders
                 </a>
             </div>
             <div className="nav-right">
-                <a href="#" className={`nav-link ${activeSection === 'cart' ? 'active' : ''}`} onClick={() => handleNav('cart')}>
+                <a href="/retailer/cart" className={`nav-link ${activeSection === 'cart' ? 'active' : ''}`} onClick={(e) => { e.preventDefault(); handleNav('cart'); }}>
                     <span className="nav-icon">🛒</span> Cart
                     <span id="cartCount" className="cart-count" style={{ display: cartCount > 0 ? 'inline-block' : 'none' }}>{cartCount}</span>
                 </a>
@@ -51,11 +51,11 @@ const RetailerNavbar = ({ user, cartCount, onSignout, onNavigate, activeSection 
                         <span className="dropdown-arrow">▼</span>
                     </button>
                     <div className={`profile-dropdown-menu ${dropdownOpen ? 'show' : ''}`} id="profileDropdownMenu">
-                        <a href="#" className="dropdown-item" id="profileBtn" onClick={() => handleNav('profile')}>
+                        <a href="/retailer/profile" className="dropdown-item" id="profileBtn" onClick={(e) => { e.preventDefault(); handleNav('profile'); }}>
                             <span className="dropdown-icon">👤</span> My Profile
                         </a>
                         <div className="dropdown-divider"></div>
-                        <a href="#" className="dropdown-item logout-item" id="signoutBtn" onClick={onSignout}>
+                        <a href="/login" className="dropdown-item logout-item" id="signoutBtn" onClick={(e) => { e.preventDefault(); onSignout(); }}>
                             <span className="dropdown-icon">🚪</span> Sign Out
                         </a>
                     </div>
@@ -82,7 +82,7 @@ const RetailerDashboard = () => {
 
     // Cart State
     const dispatch = useDispatch();
-    const { items: cart, totalItems, totalAmount } = useSelector((state) => state.cart);
+    const { items: cart, totalItems } = useSelector((state) => state.cart);
 
     // Filter State
     const [filters, setFilters] = useState({ filterType: '', filterName: '', filterPrice: '' });
@@ -342,7 +342,6 @@ const RetailerDashboard = () => {
         return <div>Error loading user profile. Please try logging in again.</div>;
     }
 
-    const cartCount = cart.reduce((total, item) => total + (item.quantity || 0), 0);
     const filteredInventory = getFilteredInventory();
 
     return (
