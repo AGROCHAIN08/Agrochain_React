@@ -287,54 +287,155 @@ const AdminDashboard = () => {
         {error && <p style={{ color: 'red', marginBottom: '10px' }}>{error}</p>}
 
         {activeSection === 'analytics' && stats && (
-          <section className="section active" style={{ width: '100%' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-              <h2>Live Platform Analytics</h2>
+          <div className="admin-analytics-container" style={{ width: '100%', marginBottom: '40px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
+              <h2>Live Platform Performance</h2>
               <button className="refresh-btn" onClick={() => loadAllData(true)}>Refresh Stats</button>
             </div>
 
-            <div className="stats-grid">
-              <div className="stat-card">
-                <div className="stat-number">{stats.totalUsers || 0}</div>
-                <div className="stat-label">Total Users</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px', width: '100%' }}>
+              <div className="analytics-card" style={{ borderTop: '4px solid #10b981', padding: '25px', background: '#fff', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}>
+                <p style={{ color: '#64748b', fontSize: '14px', fontWeight: '700', textTransform: 'uppercase', marginBottom: '10px' }}>Platform Revenue</p>
+                <h1 style={{ margin: '0', color: '#065f46', fontSize: '32px' }}>Rs {(stats.totalAmount || 0).toLocaleString('en-IN')}</h1>
+                <p style={{ fontSize: '12px', color: '#94a3b8', marginTop: '10px' }}>Total transaction value</p>
               </div>
-              <div className="stat-card">
-                <div className="stat-number">{stats.orders || 0}</div>
-                <div className="stat-label">Orders</div>
+
+              <div className="analytics-card" style={{ borderTop: '4px solid #3b82f6', padding: '25px', background: '#fff', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}>
+                <p style={{ color: '#64748b', fontSize: '14px', fontWeight: '700', textTransform: 'uppercase', marginBottom: '10px' }}>Order Volume</p>
+                <h1 style={{ margin: '0', color: '#1e40af', fontSize: '32px' }}>{stats.orders || 0}</h1>
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'space-between', fontSize: '13px', gap: '12px', flexWrap: 'wrap' }}>
+                  <span style={{ color: '#059669' }}>{stats.completedOrders || 0} Completed</span>
+                  <span style={{ color: '#d97706' }}>{stats.pendingOrders || 0} Active</span>
+                </div>
               </div>
-              <div className="stat-card">
-                <div className="stat-number">{stats.products || 0}</div>
-                <div className="stat-label">Live Listings</div>
+
+              <div className="analytics-card" style={{ borderTop: '4px solid #f59e0b', padding: '25px', background: '#fff', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}>
+                <p style={{ color: '#64748b', fontSize: '14px', fontWeight: '700', textTransform: 'uppercase', marginBottom: '10px' }}>User Ecosystem</p>
+                <h1 style={{ margin: '0', color: '#b45309', fontSize: '32px' }}>{stats.activeUsers || 0}</h1>
+                <div style={{ marginTop: '10px', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '5px', fontSize: '11px', textAlign: 'center' }}>
+                  <div style={{ background: '#fef3c7', padding: '4px', borderRadius: '4px' }}>Farmers {stats.farmers || 0}</div>
+                  <div style={{ background: '#dbeafe', padding: '4px', borderRadius: '4px' }}>Dealers {stats.dealers || 0}</div>
+                  <div style={{ background: '#d1fae5', padding: '4px', borderRadius: '4px' }}>Retailers {stats.retailers || 0}</div>
+                </div>
               </div>
-              <div className="stat-card">
-                <div className="stat-number">Rs {Number(stats.totalAmount || 0).toLocaleString('en-IN')}</div>
-                <div className="stat-label">Platform Revenue</div>
+
+              <div className="analytics-card" style={{ borderTop: '4px solid #8b5cf6', padding: '25px', background: '#fff', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}>
+                <p style={{ color: '#64748b', fontSize: '14px', fontWeight: '700', textTransform: 'uppercase', marginBottom: '10px' }}>Market Listings</p>
+                <h1 style={{ margin: '0', color: '#5b21b6', fontSize: '32px' }}>{stats.products || 0}</h1>
+                <p style={{ fontSize: '12px', color: '#94a3b8', marginTop: '10px' }}>Verified products live</p>
               </div>
             </div>
 
-            <div className="users-stats-summary">
-              <div className="summary-item">
-                <span>Farmers</span>
-                <strong>{stats.farmers || 0}</strong>
-              </div>
-              <div className="summary-item">
-                <span>Dealers</span>
-                <strong>{stats.dealers || 0}</strong>
-              </div>
-              <div className="summary-item">
-                <span>Retailers</span>
-                <strong>{stats.retailers || 0}</strong>
-              </div>
-              <div className="summary-item">
-                <span>Pending Orders</span>
-                <strong className="warning">{stats.pendingOrders || 0}</strong>
-              </div>
-              <div className="summary-item">
-                <span>Completed Orders</span>
-                <strong className="success">{stats.completedOrders || 0}</strong>
+            <div style={{ marginTop: '30px' }}>
+              <h3 style={{ color: '#1e293b', fontWeight: '700', marginBottom: '16px', fontSize: '16px' }}>
+                Financial &amp; Order Insights
+              </h3>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
+                <div className="analytics-card" style={{ padding: '20px', background: '#fff', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', borderLeft: '4px solid #10b981' }}>
+                  <p style={{ margin: 0, fontSize: '12px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', marginBottom: '10px' }}>Avg Order Value</p>
+                  <h2 style={{ margin: 0, color: '#065f46', fontSize: '26px' }}>Rs {(stats.avgOrderValue || 0).toLocaleString('en-IN')}</h2>
+                  <p style={{ margin: '6px 0 0', fontSize: '11px', color: '#94a3b8' }}>Per transaction average</p>
+                </div>
+
+                <div className="analytics-card" style={{ padding: '20px', background: '#fff', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', borderLeft: '4px solid #3b82f6' }}>
+                  <p style={{ margin: 0, fontSize: '12px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', marginBottom: '10px' }}>Bid Acceptance Rate</p>
+                  <h2 style={{ margin: 0, color: '#1e40af', fontSize: '26px' }}>{stats.bidAcceptanceRate || 0}%</h2>
+                  <div style={{ marginTop: '8px', background: '#e2e8f0', borderRadius: '99px', height: '6px', overflow: 'hidden' }}>
+                    <div style={{ width: `${stats.bidAcceptanceRate || 0}%`, background: '#3b82f6', height: '100%', borderRadius: '99px' }} />
+                  </div>
+                  <p style={{ margin: '6px 0 0', fontSize: '11px', color: '#94a3b8' }}>{stats.bidAccepted || 0} accepted · {stats.bidRejected || 0} rejected</p>
+                </div>
+
+                <div className="analytics-card" style={{ padding: '20px', background: '#fff', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', borderLeft: '4px solid #f59e0b' }}>
+                  <p style={{ margin: 0, fontSize: '12px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', marginBottom: '10px' }}>Pending Payment</p>
+                  <h2 style={{ margin: 0, color: '#b45309', fontSize: '26px' }}>Rs {(stats.paymentPendingValue || 0).toLocaleString('en-IN')}</h2>
+                  <p style={{ margin: '6px 0 0', fontSize: '11px', color: '#94a3b8' }}>Awaiting payment clearance</p>
+                </div>
+
+                <div className="analytics-card" style={{ padding: '20px', background: '#fff', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', borderLeft: '4px solid #06b6d4' }}>
+                  <p style={{ margin: 0, fontSize: '12px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', marginBottom: '10px' }}>In Transit</p>
+                  <h2 style={{ margin: 0, color: '#0e7490', fontSize: '26px' }}>{stats.inTransitOrders || 0}</h2>
+                  <p style={{ margin: '6px 0 0', fontSize: '11px', color: '#94a3b8' }}>Active deliveries right now</p>
+                </div>
+
+                <div className="analytics-card" style={{ padding: '20px', background: '#fff', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', borderLeft: '4px solid #ef4444' }}>
+                  <p style={{ margin: 0, fontSize: '12px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', marginBottom: '10px' }}>Cancellation Rate</p>
+                  <h2 style={{ margin: 0, color: '#b91c1c', fontSize: '26px' }}>{stats.cancelledRate || 0}%</h2>
+                  <div style={{ marginTop: '8px', background: '#e2e8f0', borderRadius: '99px', height: '6px', overflow: 'hidden' }}>
+                    <div style={{ width: `${stats.cancelledRate || 0}%`, background: '#ef4444', height: '100%', borderRadius: '99px' }} />
+                  </div>
+                  <p style={{ margin: '6px 0 0', fontSize: '11px', color: '#94a3b8' }}>{stats.cancelledOrders || 0} cancelled orders total</p>
+                </div>
               </div>
             </div>
-          </section>
+
+            <div style={{ marginTop: '30px' }}>
+              <h3 style={{ color: '#1e293b', fontWeight: '700', marginBottom: '16px', fontSize: '16px' }}>
+                User Growth &amp; Health
+              </h3>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
+                <div className="analytics-card" style={{ padding: '20px', background: '#fff', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', borderLeft: '4px solid #10b981' }}>
+                  <p style={{ margin: 0, fontSize: '12px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', marginBottom: '10px' }}>New Today</p>
+                  <h2 style={{ margin: 0, color: '#065f46', fontSize: '26px' }}>{stats.newUsersToday || 0}</h2>
+                  <p style={{ margin: '6px 0 0', fontSize: '11px', color: '#94a3b8' }}>Registrations in last 24 hrs</p>
+                </div>
+
+                <div className="analytics-card" style={{ padding: '20px', background: '#fff', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', borderLeft: '4px solid #8b5cf6' }}>
+                  <p style={{ margin: 0, fontSize: '12px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', marginBottom: '10px' }}>New This Week</p>
+                  <h2 style={{ margin: 0, color: '#5b21b6', fontSize: '26px' }}>{stats.newUsersThisWeek || 0}</h2>
+                  <p style={{ margin: '6px 0 0', fontSize: '11px', color: '#94a3b8' }}>Registrations in last 7 days</p>
+                </div>
+
+                <div className="analytics-card" style={{ padding: '20px', background: '#fff', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', borderLeft: '4px solid #f97316' }}>
+                  <p style={{ margin: 0, fontSize: '12px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', marginBottom: '10px' }}>Deactivated</p>
+                  <h2 style={{ margin: 0, color: '#c2410c', fontSize: '26px' }}>{stats.inactiveUsers || 0}</h2>
+                  <p style={{ margin: '6px 0 0', fontSize: '11px', color: '#94a3b8' }}>Accounts currently suspended</p>
+                </div>
+
+                <div className="analytics-card" style={{ padding: '20px', background: '#fff', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', borderLeft: '4px solid #3b82f6' }}>
+                  <p style={{ margin: 0, fontSize: '12px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', marginBottom: '10px' }}>Email Verified</p>
+                  <h2 style={{ margin: 0, color: '#1e40af', fontSize: '26px' }}>{stats.emailVerificationRate || 0}%</h2>
+                  <div style={{ marginTop: '8px', background: '#e2e8f0', borderRadius: '99px', height: '6px', overflow: 'hidden' }}>
+                    <div style={{ width: `${stats.emailVerificationRate || 0}%`, background: '#3b82f6', height: '100%', borderRadius: '99px' }} />
+                  </div>
+                  <p style={{ margin: '6px 0 0', fontSize: '11px', color: '#94a3b8' }}>{stats.verifiedEmailUsers || 0} of {stats.totalUsers || 0} users verified</p>
+                </div>
+
+                <div className="analytics-card" style={{ padding: '20px', background: '#fff', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', borderLeft: '4px solid #f59e0b' }}>
+                  <p style={{ margin: 0, fontSize: '12px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', marginBottom: '10px' }}>Google Sign-In</p>
+                  <h2 style={{ margin: 0, color: '#b45309', fontSize: '26px' }}>{stats.googleAuthUsers || 0}</h2>
+                  <p style={{ margin: '6px 0 0', fontSize: '11px', color: '#94a3b8' }}>Users via Google OAuth</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="analytics-card" style={{ marginTop: '25px', padding: '25px', background: '#fff', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}>
+              <h3 style={{ marginBottom: '20px', color: '#334155', borderBottom: '1px solid #f1f5f9', paddingBottom: '10px' }}>Top Trending Product Categories</h3>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '15px' }}>
+                {(stats.topProducts || []).length === 0 && (
+                  <p style={{ color: '#94a3b8', fontSize: '14px' }}>No product data available yet.</p>
+                )}
+                {(stats.topProducts || []).map((product, index) => (
+                  <div
+                    key={`${product.name}-${index}`}
+                    style={{
+                      background: '#f8fafc',
+                      padding: '10px 18px',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      border: '1px solid #e2e8f0',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                    }}
+                  >
+                    <span style={{ fontWeight: '600', color: '#334155' }}>{product.name}</span>
+                    <span style={{ background: '#3b82f6', color: '#fff', padding: '2px 8px', borderRadius: '4px', fontSize: '12px' }}>{product.count}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
         )}
 
         <section
