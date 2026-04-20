@@ -444,7 +444,7 @@ exports.signup = async (req, res, next) => {
       if (!req.body.gstin) {
         return res.status(400).json({ msg: "Dealer GSTIN is required" });
       }
-      if (req.body.mobile.length !== 10) {
+      if (req.body.mobile.length !== 11) {
         return res.status(400).json({ msg: "Dealer mobile must be 10 digits" });
       }
     }
