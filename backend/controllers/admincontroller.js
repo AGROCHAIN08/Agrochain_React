@@ -337,7 +337,7 @@ exports.getUsers = async (req, res) => {
 
     const users = await User.find(
       {},
-      "firstName lastName email role mobile isActive"
+      "firstName lastName email role mobile isActive createdAt updatedAt"
     ).sort({ role: 1, createdAt: -1 });
     
     if (redisClient.isReady) await redisClient.setEx(cacheKey, 60, JSON.stringify(users));
@@ -426,6 +426,392 @@ exports.getLogs = async (req, res) => {
   } catch (err) {
     console.error("Error fetching logs:", err);
     res.status(500).json({ msg: "Error fetching activity logs" });
+  }
+};
+
+const ACTION_TYPE_LABELS = {
+  account: "Account",
+  listing: "Listings",
+  verification: "Verification",
+  order: "Orders",
+  payment: "Payments",
+  vehicle: "Vehicles",
+  inventory: "Inventory",
+  review: "Reviews",
+  admin: "Admin",
+  other: "Other",
+};
+
+function pushActivity(activities, activity) {
+  if (!activity?.timestamp) return;
+  const timestamp = new Date(activity.timestamp);
+  if (Number.isNaN(timestamp.getTime())) return;
+
+  activities.push({
+    type: activity.type || "other",
+    title: activity.title || "Activity",
+    details: activity.details || "",
+    timestamp,
+    source: activity.source || "system",
+  });
+}
+
+function deriveActivitiesFromUserDocument(user, activities) {
+  pushActivity(activities, {
+    type: "account",
+    title: "Account created",
+    details: `${user.role} account created for ${user.email}`,
+    timestamp: user.createdAt,
+    source: "user",
+  });
+
+  if (user.role === "farmer") {
+    (user.crops || []).forEach((crop) => {
+      pushActivity(activities, {
+        type: "listing",
+        title: "Product submitted",
+        details: `${crop.varietySpecies} submitted for verification`,
+        timestamp: crop.dateAdded,
+        source: "crop",
+      });
+
+      if (crop.claimedAt) {
+        pushActivity(activities, {
+          type: "verification",
+          title: "Verification claimed",
+          details: `${crop.varietySpecies} claimed by ${crop.claimedByName || crop.claimedBy || "representative"}`,
+          timestamp: crop.claimedAt,
+          source: "crop",
+        });
+      }
+
+      if ((crop.verificationStatus || crop.approvalStatus) === "approved") {
+        pushActivity(activities, {
+          type: "verification",
+          title: "Listing approved and published",
+          details: `${crop.varietySpecies} approved and made visible to dealers`,
+          timestamp: crop.qualityReport?.inspectedAt || crop.lastUpdated,
+          source: "crop",
+        });
+      }
+
+      if ((crop.verificationStatus || crop.approvalStatus) === "rejected") {
+        pushActivity(activities, {
+          type: "verification",
+          title: "Listing rejected",
+          details: `${crop.varietySpecies} was rejected during verification`,
+          timestamp: crop.lastUpdated,
+          source: "crop",
+        });
+      }
+
+      (crop.reviews || []).forEach((review) => {
+        pushActivity(activities, {
+          type: "review",
+          title: "Dealer review received",
+          details: `${crop.varietySpecies} reviewed as ${review.quality} by ${review.dealerEmail}`,
+          timestamp: review.date,
+          source: "review",
+        });
+      });
+    });
+  }
+
+  if (user.role === "dealer") {
+    (user.vehicles || []).forEach((vehicle) => {
+      pushActivity(activities, {
+        type: "vehicle",
+        title: "Vehicle added",
+        details: `${vehicle.vehicleType} added with ID ${vehicle.vehicleId}`,
+        timestamp: vehicle.dateAdded,
+        source: "vehicle",
+      });
+    });
+
+    (user.inventory || []).forEach((item) => {
+      pushActivity(activities, {
+        type: "inventory",
+        title: "Inventory item added",
+        details: `${item.productName} added to inventory`,
+        timestamp: item.addedDate,
+        source: "inventory",
+      });
+
+      (item.retailerReviews || []).forEach((review) => {
+        pushActivity(activities, {
+          type: "review",
+          title: "Retailer review received",
+          details: `${item.productName} reviewed as ${review.quality} by ${review.retailerEmail}`,
+          timestamp: review.date,
+          source: "review",
+        });
+      });
+    });
+  }
+}
+
+function deriveActivitiesFromOrders(user, orders, retailerOrders, activities) {
+  if (user.role === "farmer") {
+    orders.forEach((order) => {
+      pushActivity(activities, {
+        type: "order",
+        title: "Vehicle assigned",
+        details: `Order for product ${order.productId} assigned to dealer ${order.dealerEmail}`,
+        timestamp: order.assignedDate || order.createdAt,
+        source: "order",
+      });
+
+      if (order.bidDate) {
+        pushActivity(activities, {
+          type: "order",
+          title: "Bid received",
+          details: `Bid placed by ${order.dealerEmail} for order ${order._id}`,
+          timestamp: order.bidDate,
+          source: "order",
+        });
+      }
+
+      if (order.bidResponseDate && order.bidStatus) {
+        pushActivity(activities, {
+          type: "order",
+          title: `Bid ${order.bidStatus.toLowerCase()}`,
+          details: `Bid for order ${order._id} was ${order.bidStatus.toLowerCase()}`,
+          timestamp: order.bidResponseDate,
+          source: "order",
+        });
+      }
+
+      if (order.deliveryDate) {
+        pushActivity(activities, {
+          type: "order",
+          title: "Order delivered",
+          details: `Order ${order._id} delivered to dealer ${order.dealerEmail}`,
+          timestamp: order.deliveryDate,
+          source: "order",
+        });
+      }
+
+      if (order.paymentStatus === "Completed") {
+        pushActivity(activities, {
+          type: "payment",
+          title: "Payment completed",
+          details: `Payment completed for order ${order._id}`,
+          timestamp: order.updatedAt || order.deliveryDate || order.receiptGeneratedAt,
+          source: "order",
+        });
+      }
+    });
+  }
+
+  if (user.role === "dealer") {
+    orders.forEach((order) => {
+      pushActivity(activities, {
+        type: "order",
+        title: "Crop order created",
+        details: `Order created with farmer ${order.farmerEmail} for product ${order.productId}`,
+        timestamp: order.assignedDate || order.createdAt,
+        source: "order",
+      });
+
+      if (order.bidDate) {
+        pushActivity(activities, {
+          type: "order",
+          title: "Bid placed",
+          details: `Placed bid for order ${order._id}`,
+          timestamp: order.bidDate,
+          source: "order",
+        });
+      }
+
+      if (order.bidResponseDate && order.bidStatus) {
+        pushActivity(activities, {
+          type: "order",
+          title: `Bid ${order.bidStatus.toLowerCase()} by farmer`,
+          details: `Farmer ${order.farmerEmail} ${order.bidStatus.toLowerCase()} bid on order ${order._id}`,
+          timestamp: order.bidResponseDate,
+          source: "order",
+        });
+      }
+
+      if (order.receiptGeneratedAt) {
+        pushActivity(activities, {
+          type: "order",
+          title: "Receipt generated",
+          details: `Receipt ${order.receiptNumber || ""} generated for order ${order._id}`.trim(),
+          timestamp: order.receiptGeneratedAt,
+          source: "order",
+        });
+      }
+
+      if (order.paymentStatus === "Completed") {
+        pushActivity(activities, {
+          type: "payment",
+          title: "Payment completed",
+          details: `Completed payment for farmer order ${order._id}`,
+          timestamp: order.updatedAt || order.receiptGeneratedAt,
+          source: "order",
+        });
+      }
+    });
+
+    retailerOrders.forEach((order) => {
+      pushActivity(activities, {
+        type: "order",
+        title: "Retailer order received",
+        details: `Received retailer order from ${order.retailerEmail}`,
+        timestamp: order.createdAt,
+        source: "retailer-order",
+      });
+
+      if (order.paymentDetails?.status === "Completed") {
+        pushActivity(activities, {
+          type: "payment",
+          title: "Retailer payment completed",
+          details: `Retailer payment completed for order ${order._id}`,
+          timestamp: order.updatedAt || order.createdAt,
+          source: "retailer-order",
+        });
+      }
+
+      if (order.reviewSubmitted && order.review?.date) {
+        pushActivity(activities, {
+          type: "review",
+          title: "Retailer review submitted",
+          details: `Retailer ${order.retailerEmail} reviewed order ${order._id}`,
+          timestamp: order.review.date,
+          source: "retailer-order",
+        });
+      }
+    });
+  }
+
+  if (user.role === "retailer") {
+    retailerOrders.forEach((order) => {
+      pushActivity(activities, {
+        type: "order",
+        title: "Order placed",
+        details: `Placed order with dealer ${order.dealerInfo?.email}`,
+        timestamp: order.createdAt,
+        source: "retailer-order",
+      });
+
+      if (order.paymentDetails?.status === "Completed") {
+        pushActivity(activities, {
+          type: "payment",
+          title: "Payment completed",
+          details: `Payment completed for retailer order ${order._id}`,
+          timestamp: order.updatedAt || order.createdAt,
+          source: "retailer-order",
+        });
+      }
+
+      if (order.reviewSubmitted && order.review?.date) {
+        pushActivity(activities, {
+          type: "review",
+          title: "Review submitted",
+          details: `Submitted review for order ${order._id}`,
+          timestamp: order.review.date,
+          source: "retailer-order",
+        });
+      }
+    });
+  }
+}
+
+exports.getUserActivityTimeline = async (req, res) => {
+  try {
+    const { email } = req.params;
+    const { type = "all", q = "", from = "", to = "" } = req.query;
+
+    const user = await User.findOne(
+      { email },
+      "firstName lastName email role mobile isActive createdAt updatedAt crops vehicles inventory"
+    ).lean();
+
+    if (!user) {
+      return res.status(404).json({ msg: "User not found" });
+    }
+
+    const [logs, orders, retailerOrders] = await Promise.all([
+      Log.find({ userEmail: email }).sort({ timestamp: -1 }).lean(),
+      Order.find({
+        $or: [{ farmerEmail: email }, { dealerEmail: email }],
+      }).sort({ createdAt: -1 }).lean(),
+      RetailerOrder.find({
+        $or: [{ retailerEmail: email }, { "dealerInfo.email": email }],
+      }).sort({ createdAt: -1 }).lean(),
+    ]);
+
+    const activities = [];
+
+    deriveActivitiesFromUserDocument(user, activities);
+    deriveActivitiesFromOrders(user, orders, retailerOrders, activities);
+
+    logs.forEach((log) => {
+      pushActivity(activities, {
+        type:
+          log.actionType === "login"
+            ? "account"
+            : log.actionType === "addProduct"
+              ? "listing"
+              : log.actionType === "orderPlaced"
+                ? "order"
+                : log.actionType === "updateProfile"
+                  ? "admin"
+                  : log.actionType === "deleteUser"
+                    ? "admin"
+                    : "other",
+        title: log.actionType === "login" ? "Login recorded" : log.actionType,
+        details: log.details,
+        timestamp: log.timestamp,
+        source: "log",
+      });
+    });
+
+    const normalizedQuery = q.trim().toLowerCase();
+    const fromDate = from ? new Date(from) : null;
+    const toDate = to ? new Date(to) : null;
+    if (toDate && !Number.isNaN(toDate.getTime())) {
+      toDate.setHours(23, 59, 59, 999);
+    }
+
+    const filteredActivities = activities
+      .filter((activity) => {
+        const matchesType = type === "all" || activity.type === type;
+        const matchesQuery =
+          !normalizedQuery ||
+          activity.title.toLowerCase().includes(normalizedQuery) ||
+          activity.details.toLowerCase().includes(normalizedQuery) ||
+          activity.source.toLowerCase().includes(normalizedQuery);
+        const matchesFrom = !fromDate || activity.timestamp >= fromDate;
+        const matchesTo = !toDate || activity.timestamp <= toDate;
+
+        return matchesType && matchesQuery && matchesFrom && matchesTo;
+      })
+      .sort((a, b) => b.timestamp - a.timestamp)
+      .map((activity) => ({
+        ...activity,
+        timestamp: activity.timestamp.toISOString(),
+      }));
+
+    res.json({
+      user: {
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        role: user.role,
+        mobile: user.mobile,
+        isActive: user.isActive,
+        createdAt: user.createdAt,
+      },
+      availableTypes: Object.entries(ACTION_TYPE_LABELS).map(([value, label]) => ({ value, label })),
+      totalActivities: filteredActivities.length,
+      latestActivityAt: filteredActivities[0]?.timestamp || null,
+      activities: filteredActivities,
+    });
+  } catch (err) {
+    console.error("Error fetching user activity timeline:", err);
+    res.status(500).json({ msg: "Error fetching user activity timeline" });
   }
 };
 

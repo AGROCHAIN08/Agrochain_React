@@ -25,28 +25,28 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/13</span>
-            </div>
-        
-            
-            <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
-                <span class="quiet">Branches</span>
                 <span class='fraction'>0/6</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
-                <span class="quiet">Functions</span>
+                <span class="quiet">Branches</span>
                 <span class='fraction'>0/4</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
+                <span class="quiet">Functions</span>
+                <span class='fraction'>0/3</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/12</span>
+                <span class='fraction'>0/6</span>
             </div>
         
             
@@ -108,43 +108,19 @@
 <a name='L43'></a><a href='#L43'>43</a>
 <a name='L44'></a><a href='#L44'>44</a>
 <a name='L45'></a><a href='#L45'>45</a>
-<a name='L46'></a><a href='#L46'>46</a>
-<a name='L47'></a><a href='#L47'>47</a>
-<a name='L48'></a><a href='#L48'>48</a>
-<a name='L49'></a><a href='#L49'>49</a>
-<a name='L50'></a><a href='#L50'>50</a>
-<a name='L51'></a><a href='#L51'>51</a>
-<a name='L52'></a><a href='#L52'>52</a>
-<a name='L53'></a><a href='#L53'>53</a>
-<a name='L54'></a><a href='#L54'>54</a>
-<a name='L55'></a><a href='#L55'>55</a>
-<a name='L56'></a><a href='#L56'>56</a>
-<a name='L57'></a><a href='#L57'>57</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L46'></a><a href='#L46'>46</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -175,57 +151,48 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import React, { useEffect, useState } from 'react';
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-// Import the home.css styles directly into this component
 import '../assets/css/home.css'; 
 &nbsp;
 const Navbar = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
   const [isMobileMenuOpen, setMobileMenuOpen] = <span class="cstat-no" title="statement not covered" >useState(false);</span>
 &nbsp;
-  // This logic comes from your home.js for the mobile menu
-<span class="cstat-no" title="statement not covered" >  useEffect(<span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
-    const navCenter = <span class="cstat-no" title="statement not covered" >document.querySelector('.nav-center');</span>
-<span class="cstat-no" title="statement not covered" >    if (!navCenter) <span class="cstat-no" title="statement not covered" >return;</span></span>
-&nbsp;
-<span class="cstat-no" title="statement not covered" >    if (isMobileMenuOpen) {</span>
-<span class="cstat-no" title="statement not covered" >      navCenter.classList.add('active');</span>
-    } else {
-<span class="cstat-no" title="statement not covered" >      navCenter.classList.remove('active');</span>
-    }
-  }, [isMobileMenuOpen]);
-&nbsp;
-  // Close menu when a link is clicked
   const closeMenu = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    setMobileMenuOpen(false);</span>
   };
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  return (</span>
-    &lt;nav className="navbar"&gt;
-      &lt;div className="nav-left"&gt;
-        &lt;img src="https://ik.imagekit.io/a2wpi1kd9/imgToUrl/image-to-url_ThyEiMVLh" alt="AgroChain Logo" className="logo" /&gt;
-        &lt;span className="brand-name"&gt;Agro&lt;span className="chain-text"&gt;Chain&lt;/span&gt;&lt;/span&gt;
+    &lt;nav className="agro-navbar"&gt;
+      &lt;div className="agro-nav-header"&gt;
+        &lt;Link to="/" className="agro-nav-left" onClick={closeMenu}&gt;
+          &lt;img src="https://ik.imagekit.io/a2wpi1kd9/imgToUrl/image-to-url_ThyEiMVLh" alt="AgroChain Logo" className="agro-logo" /&gt;
+          &lt;span className="agro-brand-name"&gt;Agro&lt;span className="agro-chain-text"&gt;Chain&lt;/span&gt;&lt;/span&gt;
+        &lt;/Link&gt;
+        
+        &lt;button 
+          className="agro-mobile-toggle" 
+          aria-label="Toggle navigation menu"
+          onClick={<span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >setMobileMenuOpen(!isMobileMenuOpen)}</span>
+        &gt;
+          &lt;i className={isMobileMenuOpen ? "fas fa-times" : "fas fa-bars"}&gt;&lt;/i&gt;
+        &lt;/button&gt;
       &lt;/div&gt;
       
-      &lt;button 
-        className="mobile-menu-toggle" 
-        aria-label="Toggle navigation menu"
-        onClick={<span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >setMobileMenuOpen(!isMobileMenuOpen)}</span>
-      &gt;
-        &lt;i className={isMobileMenuOpen ? "fas fa-times" : "fas fa-bars"}&gt;&lt;/i&gt;
-      &lt;/button&gt;
-      
-      &lt;div className="nav-center"&gt;
-        &lt;Link to="/" className="nav-link" onClick={closeMenu}&gt;Home&lt;/Link&gt;
-        &lt;Link to="/about" className="nav-link" onClick={closeMenu}&gt;About&lt;/Link&gt;
-        {/* Use &lt;a&gt; for hash links to scroll on the same page */}
-        &lt;a href="/#features" className="nav-link" onClick={closeMenu}&gt;Features&lt;/a&gt;
-        &lt;a href="/#roles" className="nav-link" onClick={closeMenu}&gt;User Roles&lt;/a&gt;
-      &lt;/div&gt;
-      
-      &lt;div className="nav-right"&gt;
-        &lt;Link to="/login"&gt;&lt;button className="btn"&gt;Log In&lt;/button&gt;&lt;/Link&gt;
-        &lt;Link to="/signup"&gt;&lt;button className="btn btn-signup"&gt;Sign Up&lt;/button&gt;&lt;/Link&gt;
+      &lt;div className={`agro-nav-menu ${isMobileMenuOpen ? 'active' : ''}`}&gt;
+        &lt;div className="agro-nav-center"&gt;
+          &lt;Link to="/" className="agro-nav-link" onClick={closeMenu}&gt;Home&lt;/Link&gt;
+          &lt;Link to="/about" className="agro-nav-link" onClick={closeMenu}&gt;About&lt;/Link&gt;
+          &lt;a href="/#features" className="agro-nav-link" onClick={closeMenu}&gt;Features&lt;/a&gt;
+          &lt;a href="/#roles" className="agro-nav-link" onClick={closeMenu}&gt;User Roles&lt;/a&gt;
+        &lt;/div&gt;
+        
+        &lt;div className="agro-nav-right"&gt;
+          &lt;Link to="/login" onClick={closeMenu}&gt;&lt;button className="agro-btn"&gt;Log In&lt;/button&gt;&lt;/Link&gt;
+          &lt;Link to="/signup" onClick={closeMenu}&gt;&lt;button className="agro-btn agro-btn-signup"&gt;Sign Up&lt;/button&gt;&lt;/Link&gt;
+        &lt;/div&gt;
       &lt;/div&gt;
     &lt;/nav&gt;
   );
@@ -238,7 +205,7 @@ export default Navbar;</pre></td></tr></table></pre>
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-04-19T23:05:43.827Z
+                at 2026-04-20T07:26:42.728Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

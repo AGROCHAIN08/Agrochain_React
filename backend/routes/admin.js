@@ -8,6 +8,7 @@ const {
   deleteUser,
   deactivateUser,
   getLogs,
+  getUserActivityTimeline,
   getAllProducts,
   adminDeleteProduct,
   getRepresentatives,
@@ -108,6 +109,7 @@ router.put("/deactivate/:id", protect, authorize('admin'), deactivateUser);
  *         description: Log entries
  */
 router.get("/logs", protect, authorize('admin'), getLogs);
+router.get("/user-activity/:email", protect, authorize('admin'), getUserActivityTimeline);
 
 /**
  * @swagger

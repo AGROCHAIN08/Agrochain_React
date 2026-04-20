@@ -25,14 +25,14 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/290</span>
+                <span class='fraction'>0/294</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/186</span>
+                <span class='fraction'>0/184</span>
             </div>
         
             
@@ -1076,7 +1076,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1364,7 +1364,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1957,6 +1956,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -2009,15 +2009,15 @@ const RetailerNavbar = <span class="cstat-no" title="statement not covered" ><sp
                 &lt;span className="brand-name"&gt;Agro&lt;span className="chain-text"&gt;Chain&lt;/span&gt;&lt;/span&gt;
             &lt;/div&gt;
             &lt;div className="nav-center"&gt;
-                &lt;a href="#" className={`nav-link ${activeSection === 'browse' ? 'active' : ''}`} onClick={<span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >handleNav('browse')}</span>&gt;
+                &lt;a href="/retailer" className={`nav-link ${activeSection === 'browse' ? 'active' : ''}`} onClick={<span class="fstat-no" title="function not covered" >(e</span>) =&gt; { <span class="cstat-no" title="statement not covered" >e.preventDefault(); <span class="cstat-no" title="statement not covered" ></span>handleNav('browse'); </span>}}&gt;
                     &lt;span className="nav-icon"&gt;🛍️&lt;/span&gt; Browse Products
                 &lt;/a&gt;
-                &lt;a href="#" className={`nav-link ${activeSection === 'orders' ? 'active' : ''}`} onClick={<span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >handleNav('orders')}</span>&gt;
+                &lt;a href="/retailer/orders" className={`nav-link ${activeSection === 'orders' ? 'active' : ''}`} onClick={<span class="fstat-no" title="function not covered" >(e</span>) =&gt; { <span class="cstat-no" title="statement not covered" >e.preventDefault(); <span class="cstat-no" title="statement not covered" ></span>handleNav('orders'); </span>}}&gt;
                     &lt;span className="nav-icon"&gt;📦&lt;/span&gt; My Orders
                 &lt;/a&gt;
             &lt;/div&gt;
             &lt;div className="nav-right"&gt;
-                &lt;a href="#" className={`nav-link ${activeSection === 'cart' ? 'active' : ''}`} onClick={<span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >handleNav('cart')}</span>&gt;
+                &lt;a href="/retailer/cart" className={`nav-link ${activeSection === 'cart' ? 'active' : ''}`} onClick={<span class="fstat-no" title="function not covered" >(e</span>) =&gt; { <span class="cstat-no" title="statement not covered" >e.preventDefault(); <span class="cstat-no" title="statement not covered" ></span>handleNav('cart'); </span>}}&gt;
                     &lt;span className="nav-icon"&gt;🛒&lt;/span&gt; Cart
                     &lt;span id="cartCount" className="cart-count" style={{ display: cartCount &gt; 0 ? 'inline-block' : 'none' }}&gt;{cartCount}&lt;/span&gt;
                 &lt;/a&gt;
@@ -2028,11 +2028,11 @@ const RetailerNavbar = <span class="cstat-no" title="statement not covered" ><sp
                         &lt;span className="dropdown-arrow"&gt;▼&lt;/span&gt;
                     &lt;/button&gt;
                     &lt;div className={`profile-dropdown-menu ${dropdownOpen ? 'show' : ''}`} id="profileDropdownMenu"&gt;
-                        &lt;a href="#" className="dropdown-item" id="profileBtn" onClick={<span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >handleNav('profile')}</span>&gt;
+                        &lt;a href="/retailer/profile" className="dropdown-item" id="profileBtn" onClick={<span class="fstat-no" title="function not covered" >(e</span>) =&gt; { <span class="cstat-no" title="statement not covered" >e.preventDefault(); <span class="cstat-no" title="statement not covered" ></span>handleNav('profile'); </span>}}&gt;
                             &lt;span className="dropdown-icon"&gt;👤&lt;/span&gt; My Profile
                         &lt;/a&gt;
                         &lt;div className="dropdown-divider"&gt;&lt;/div&gt;
-                        &lt;a href="#" className="dropdown-item logout-item" id="signoutBtn" onClick={onSignout}&gt;
+                        &lt;a href="/login" className="dropdown-item logout-item" id="signoutBtn" onClick={<span class="fstat-no" title="function not covered" >(e</span>) =&gt; { <span class="cstat-no" title="statement not covered" >e.preventDefault(); <span class="cstat-no" title="statement not covered" ></span>onSignout(); </span>}}&gt;
                             &lt;span className="dropdown-icon"&gt;🚪&lt;/span&gt; Sign Out
                         &lt;/a&gt;
                     &lt;/div&gt;
@@ -2059,7 +2059,7 @@ const RetailerDashboard = <span class="cstat-no" title="statement not covered" >
 &nbsp;
     // Cart State
     const dispatch = <span class="cstat-no" title="statement not covered" >useDispatch();</span>
-    const { items: cart, totalItems, totalAmount } = <span class="cstat-no" title="statement not covered" >useSelector(<span class="fstat-no" title="function not covered" >(s</span>tate) =&gt; <span class="cstat-no" title="statement not covered" >state.cart)</span>;</span>
+    const { items: cart, totalItems } = <span class="cstat-no" title="statement not covered" >useSelector(<span class="fstat-no" title="function not covered" >(s</span>tate) =&gt; <span class="cstat-no" title="statement not covered" >state.cart)</span>;</span>
 &nbsp;
     // Filter State
     const [filters, setFilters] = <span class="cstat-no" title="statement not covered" >useState({ filterType: '', filterName: '', filterPrice: '' });</span>
@@ -2319,7 +2319,6 @@ const RetailerDashboard = <span class="cstat-no" title="statement not covered" >
 <span class="cstat-no" title="statement not covered" >        return &lt;div&gt;Error loading user profile. Please try logging in again.&lt;/div&gt;;</span>
     }
 &nbsp;
-    const cartCount = <span class="cstat-no" title="statement not covered" >cart.reduce(<span class="fstat-no" title="function not covered" >(t</span>otal, item) =&gt; <span class="cstat-no" title="statement not covered" >total + (item.quantity || 0),</span> 0);</span>
     const filteredInventory = <span class="cstat-no" title="statement not covered" >getFilteredInventory();</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >    return (</span>
@@ -2931,14 +2930,15 @@ const ViewReviewsModal = <span class="cstat-no" title="statement not covered" ><
 };
 &nbsp;
 &nbsp;
-export default RetailerDashboard;</pre></td></tr></table></pre>
+export default RetailerDashboard;
+&nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-04-19T23:05:43.827Z
+                at 2026-04-20T07:26:42.728Z
             </div>
         <script src="../../prettify.js"></script>
         <script>
