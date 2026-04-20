@@ -463,6 +463,250 @@ canvas {
   color: #f59e0b;
 }
 
+/* ========== USER ACTIVITY EXPLORER ========== */
+.activity-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.activity-subtitle {
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.6;
+  margin-top: 6px;
+  max-width: 680px;
+}
+
+.activity-explorer {
+  display: grid;
+  grid-template-columns: minmax(280px, 340px) minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.activity-users-panel,
+.activity-detail-panel {
+  background: white;
+  border-radius: 18px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+  border: 1px solid #e5e7eb;
+}
+
+.activity-users-panel {
+  padding: 20px;
+  position: sticky;
+  top: 88px;
+}
+
+.activity-detail-panel {
+  padding: 24px;
+  min-height: 420px;
+}
+
+.activity-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.activity-panel-header h3 {
+  font-size: 20px;
+  color: #1f2937;
+}
+
+.activity-panel-header span {
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.activity-filter-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.activity-filter-stack input,
+.activity-filter-stack select {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid #dbe3ee;
+  background: #f8fafc;
+  font-size: 14px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.activity-filter-stack input:focus,
+.activity-filter-stack select:focus {
+  outline: none;
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.12);
+}
+
+.activity-user-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 720px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.activity-user-card {
+  width: 100%;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 14px 16px;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.activity-user-card:hover {
+  transform: translateY(-2px);
+  border-color: #93c5fd;
+  box-shadow: 0 8px 18px rgba(59, 130, 246, 0.12);
+}
+
+.activity-user-card.selected {
+  border-color: #3b82f6;
+  background: linear-gradient(180deg, #eff6ff, #ffffff);
+  box-shadow: 0 10px 22px rgba(59, 130, 246, 0.16);
+}
+
+.activity-user-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.activity-user-top strong {
+  color: #1f2937;
+  font-size: 15px;
+}
+
+.activity-user-email {
+  color: #475569;
+  font-size: 13px;
+  word-break: break-word;
+  margin-bottom: 10px;
+}
+
+.activity-user-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.activity-detail-hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 18px;
+  padding: 20px 22px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #f0fdf4, #eff6ff);
+  border: 1px solid #dbeafe;
+  margin-bottom: 20px;
+}
+
+.activity-detail-hero h3 {
+  font-size: 26px;
+  color: #1f2937;
+  margin-bottom: 6px;
+}
+
+.activity-detail-hero p {
+  color: #64748b;
+  font-size: 14px;
+}
+
+.activity-hero-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.activity-empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 180px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 16px;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 14px;
+  text-align: center;
+  padding: 24px;
+}
+
+.activity-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.activity-entry {
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 18px 18px 16px;
+  background: #ffffff;
+  box-shadow: 0 3px 12px rgba(15, 23, 42, 0.04);
+}
+
+.activity-entry-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.activity-entry-left {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.activity-entry-left strong {
+  color: #1f2937;
+  font-size: 15px;
+}
+
+.activity-entry time {
+  color: #64748b;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.activity-entry p {
+  color: #475569;
+  line-height: 1.6;
+  font-size: 14px;
+}
+
+.activity-source {
+  margin-top: 12px;
+  color: #94a3b8;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
 /* ========== LOGS STATS ========== */
 .logs-stats {
   display: grid;
@@ -571,6 +815,16 @@ tr:hover {
   color: #92400e;
 }
 
+.role-admin {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+
+.role-other {
+  background: #e5e7eb;
+  color: #374151;
+}
+
 .status-badge {
   padding: 6px 12px;
   border-radius: 20px;
@@ -662,6 +916,56 @@ tr:hover {
   color: #991b1b;
 }
 
+.log-account {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.log-listing {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.log-verification {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.log-order {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+
+.log-payment {
+  background: #ccfbf1;
+  color: #0f766e;
+}
+
+.log-vehicle {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.log-inventory {
+  background: #fae8ff;
+  color: #a21caf;
+}
+
+.log-review {
+  background: #ffe4e6;
+  color: #be123c;
+}
+
+.log-admin {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.log-other {
+  background: #f1f5f9;
+  color: #475569;
+}
+
 /* ========== RESPONSIVE DESIGN ========== */
 @media (max-width: 1200px) {
   .charts-container {
@@ -684,6 +988,14 @@ tr:hover {
   
   .performance-metrics {
     grid-template-columns: 1fr;
+  }
+
+  .activity-explorer {
+    grid-template-columns: 1fr;
+  }
+
+  .activity-users-panel {
+    position: static;
   }
 }
 
@@ -742,6 +1054,21 @@ tr:hover {
   
   .logs-stats {
     grid-template-columns: 1fr;
+  }
+
+  .activity-header,
+  .activity-detail-hero,
+  .activity-entry-top {
+    flex-direction: column;
+  }
+
+  .activity-detail-panel,
+  .activity-users-panel {
+    padding: 18px;
+  }
+
+  .activity-user-meta {
+    flex-direction: column;
   }
 }
 

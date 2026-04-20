@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/236</span>
+                <span class='fraction'>0/242</span>
             </div>
         
             
@@ -39,14 +39,14 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/77</span>
+                <span class='fraction'>0/78</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/209</span>
+                <span class='fraction'>0/210</span>
             </div>
         
             
@@ -1024,7 +1024,8 @@
 <a name='L959'></a><a href='#L959'>959</a>
 <a name='L960'></a><a href='#L960'>960</a>
 <a name='L961'></a><a href='#L961'>961</a>
-<a name='L962'></a><a href='#L962'>962</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L962'></a><a href='#L962'>962</a>
+<a name='L963'></a><a href='#L963'>963</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1088,7 +1089,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1918,6 +1919,7 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1991,7 +1993,7 @@ import api from '../services/api';
 import '../assets/css/farmer.css'; 
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { setNotifications, addNotification } from '../redux/slices/notificationSlice';
+import { setNotifications } from '../redux/slices/notificationSlice';
 &nbsp;
 // --- FarmerNavbar Component (from farmer.html) ---
 // THIS IS DEFINED *INSIDE* THE DASHBOARD FILE
@@ -2023,16 +2025,16 @@ const FarmerNavbar = <span class="cstat-no" title="statement not covered" ><span
       
       &lt;div className={`nav-links-container ${menuOpen ? 'active' : ''}`} id="navLinksContainer"&gt;
           &lt;div className="nav-center"&gt;
-            &lt;a href="#" className={activeSection === 'inventory' ? 'nav-link active' : 'nav-link'} onClick={<span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >onNavigate('inventory')}</span>&gt;
+            &lt;a href="/farmer" className={activeSection === 'inventory' ? 'nav-link active' : 'nav-link'} onClick={<span class="fstat-no" title="function not covered" >(e</span>) =&gt; { <span class="cstat-no" title="statement not covered" >e.preventDefault(); <span class="cstat-no" title="statement not covered" ></span>onNavigate('inventory'); </span>}}&gt;
               &lt;span className="nav-icon"&gt;🌾&lt;/span&gt; Inventory
             &lt;/a&gt;
-            &lt;a href="#" className={activeSection === 'orders' ? 'nav-link active' : 'nav-link'} onClick={<span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >onNavigate('orders')}</span>&gt;
+            &lt;a href="/farmer/orders" className={activeSection === 'orders' ? 'nav-link active' : 'nav-link'} onClick={<span class="fstat-no" title="function not covered" >(e</span>) =&gt; { <span class="cstat-no" title="statement not covered" >e.preventDefault(); <span class="cstat-no" title="statement not covered" ></span>onNavigate('orders'); </span>}}&gt;
               &lt;span className="nav-icon"&gt;📦&lt;/span&gt; Orders
             &lt;/a&gt;
           &lt;/div&gt;
           
           &lt;div className="nav-right"&gt;
-            &lt;a href="#" className={activeSection === 'notifications' ? 'nav-link active' : 'nav-link'} id="navNotificationBtn" onClick={<span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >onNavigate('notifications')}</span>&gt;
+            &lt;a href="/farmer/notifications" className={activeSection === 'notifications' ? 'nav-link active' : 'nav-link'} id="navNotificationBtn" onClick={<span class="fstat-no" title="function not covered" >(e</span>) =&gt; { <span class="cstat-no" title="statement not covered" >e.preventDefault(); <span class="cstat-no" title="statement not covered" ></span>onNavigate('notifications'); </span>}}&gt;
               &lt;span className="nav-icon"&gt;🔔&lt;/span&gt;
               {notificationCount &gt; 0 &amp;&amp;
                 &lt;span className="notification-badge" id="notificationBadge"&gt;{notificationCount}&lt;/span&gt;
@@ -2045,11 +2047,11 @@ const FarmerNavbar = <span class="cstat-no" title="statement not covered" ><span
                 &lt;span className="dropdown-arrow"&gt;▼&lt;/span&gt;
               &lt;/button&gt;
               &lt;div className={`profile-dropdown-menu ${dropdownOpen ? 'show' : ''}`} id="profileDropdownMenu"&gt;
-                &lt;a href="#" className="dropdown-item" id="viewProfileBtn" onClick={<span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >onNavigate('profile')}</span>&gt;
+                &lt;a href="/farmer/profile" className="dropdown-item" id="viewProfileBtn" onClick={<span class="fstat-no" title="function not covered" >(e</span>) =&gt; { <span class="cstat-no" title="statement not covered" >e.preventDefault(); <span class="cstat-no" title="statement not covered" ></span>onNavigate('profile'); </span>}}&gt;
                   &lt;span className="dropdown-icon"&gt;👤&lt;/span&gt; My Profile
                 &lt;/a&gt;
                 &lt;div className="dropdown-divider"&gt;&lt;/div&gt;
-                &lt;a href="#" className="dropdown-item logout-item" id="navSignoutBtn" onClick={onSignout}&gt;
+                &lt;a href="/login" className="dropdown-item logout-item" id="navSignoutBtn" onClick={<span class="fstat-no" title="function not covered" >(e</span>) =&gt; { <span class="cstat-no" title="statement not covered" >e.preventDefault(); <span class="cstat-no" title="statement not covered" ></span>onSignout(); </span>}}&gt;
                   &lt;span className="dropdown-icon"&gt;🚪&lt;/span&gt; Sign Out
                 &lt;/a&gt;
               &lt;/div&gt;
@@ -2946,14 +2948,15 @@ const FarmerReceiptModal = <span class="cstat-no" title="statement not covered" 
   );
 };
 &nbsp;
-export default FarmerDashboard;</pre></td></tr></table></pre>
+export default FarmerDashboard;
+&nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-04-19T23:05:43.827Z
+                at 2026-04-20T06:46:58.180Z
             </div>
         <script src="../../prettify.js"></script>
         <script>
