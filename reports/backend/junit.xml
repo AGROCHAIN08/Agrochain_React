@@ -1,55 +1,55 @@
 <?xml version="1.0" encoding="utf-8"?>
 <testsuites>
-	<testsuite name="backend app" time="0.443008" disabled="0" errors="0" tests="5" failures="0" skipped="0" hostname="Sriman3885">
-		<testcase name="serves the health check payload" time="0.400454" classname="test"/>
-		<testcase name="returns CORS headers for allowed origins" time="0.013256" classname="test"/>
-		<testcase name="allows origins provided through deployment environment variables" time="0.008136" classname="test"/>
-		<testcase name="rejects blocked origins through the central error handler" time="0.010493" classname="test"/>
-		<testcase name="returns a structured 404 response for unknown endpoints" time="0.008868" classname="test"/>
+	<testsuite name="backend app" time="0.349446" disabled="0" errors="0" tests="5" failures="0" skipped="0" hostname="Sriman3885">
+		<testcase name="serves the health check payload" time="0.312613" classname="test"/>
+		<testcase name="returns CORS headers for allowed origins" time="0.011582" classname="test"/>
+		<testcase name="allows origins provided through deployment environment variables" time="0.007309" classname="test"/>
+		<testcase name="rejects blocked origins through the central error handler" time="0.008776" classname="test"/>
+		<testcase name="returns a structured 404 response for unknown endpoints" time="0.007789" classname="test"/>
 	</testsuite>
-	<testsuite name="dealerController.getAllProducts" time="0.003624" disabled="0" errors="0" tests="1" failures="0" skipped="0" hostname="Sriman3885">
-		<testcase name="returns flattened crops from all farmers" time="0.003482" classname="test"/>
+	<testsuite name="dealerController.getAllProducts" time="0.002791" disabled="0" errors="0" tests="1" failures="0" skipped="0" hostname="Sriman3885">
+		<testcase name="returns only approved crops from all farmers" time="0.002698" classname="test"/>
 	</testsuite>
-	<testsuite name="dealerController.getDealerOrders" time="0.001807" disabled="0" errors="0" tests="1" failures="0" skipped="0" hostname="Sriman3885">
-		<testcase name="hydrates order history from batched dealer and farmer lookups" time="0.001717" classname="test"/>
+	<testsuite name="dealerController.getDealerOrders" time="0.002509" disabled="0" errors="0" tests="1" failures="0" skipped="0" hostname="Sriman3885">
+		<testcase name="hydrates order history from batched dealer and farmer lookups" time="0.002419" classname="test"/>
 	</testsuite>
-	<testsuite name="farmerController.getFarmerOrders" time="0.002761" disabled="0" errors="0" tests="1" failures="0" skipped="0" hostname="Sriman3885">
-		<testcase name="hydrates farmer order history from batched dealer lookups" time="0.002670" classname="test"/>
+	<testsuite name="farmerController.getFarmerOrders" time="0.002378" disabled="0" errors="0" tests="1" failures="0" skipped="0" hostname="Sriman3885">
+		<testcase name="hydrates farmer order history from batched dealer lookups" time="0.002293" classname="test"/>
 	</testsuite>
-	<testsuite name="representativeController.getPendingCrops" time="0.002446" disabled="0" errors="0" tests="1" failures="0" skipped="0" hostname="Sriman3885">
-		<testcase name="groups pending crops by batchId" time="0.002359" classname="test"/>
+	<testsuite name="representativeController.getPendingCrops" time="0.002547" disabled="0" errors="0" tests="1" failures="0" skipped="0" hostname="Sriman3885">
+		<testcase name="groups pending crops by batchId" time="0.002459" classname="test"/>
 	</testsuite>
-	<testsuite name="representativeController.getMyAssigned" time="0.001694" disabled="0" errors="0" tests="1" failures="0" skipped="0" hostname="Sriman3885">
-		<testcase name="returns only claimed or in-verification crops for the current representative" time="0.001602" classname="test"/>
+	<testsuite name="representativeController.getMyAssigned" time="0.002245" disabled="0" errors="0" tests="1" failures="0" skipped="0" hostname="Sriman3885">
+		<testcase name="returns only claimed or in-verification crops for the current representative" time="0.002119" classname="test"/>
 	</testsuite>
-	<testsuite name="representativeController.getExpiryAlerts" time="0.001813" disabled="0" errors="0" tests="1" failures="0" skipped="0" hostname="Sriman3885">
-		<testcase name="returns approved crops expiring within the requested window" time="0.001717" classname="test"/>
+	<testsuite name="representativeController.getExpiryAlerts" time="0.002087" disabled="0" errors="0" tests="1" failures="0" skipped="0" hostname="Sriman3885">
+		<testcase name="returns approved crops expiring within the requested window" time="0.001987" classname="test"/>
 	</testsuite>
-	<testsuite name="retailerController.getAvailableProducts" time="0.006156" disabled="0" errors="0" tests="3" failures="0" skipped="0" hostname="Sriman3885">
-		<testcase name="returns cached products when Redis already has them" time="0.003032" classname="test"/>
-		<testcase name="flattens dealer inventory on cache miss and stores it in Redis" time="0.001477" classname="test"/>
-		<testcase name="returns 500 when fetching products fails" time="0.001424" classname="test"/>
+	<testsuite name="retailerController.getAvailableProducts" time="0.004852" disabled="0" errors="0" tests="3" failures="0" skipped="0" hostname="Sriman3885">
+		<testcase name="returns cached products when Redis already has them" time="0.002347" classname="test"/>
+		<testcase name="flattens dealer inventory on cache miss and stores it in Redis" time="0.001254" classname="test"/>
+		<testcase name="returns 500 when fetching products fails" time="0.001094" classname="test"/>
 	</testsuite>
-	<testsuite name="retailerController.placeOrder" time="0.003302" disabled="0" errors="0" tests="2" failures="0" skipped="0" hostname="Sriman3885">
-		<testcase name="groups cart items by dealer and creates one order per dealer" time="0.001893" classname="test"/>
-		<testcase name="rejects empty carts" time="0.001268" classname="test"/>
+	<testsuite name="retailerController.placeOrder" time="0.005062" disabled="0" errors="0" tests="2" failures="0" skipped="0" hostname="Sriman3885">
+		<testcase name="groups cart items by dealer and creates one order per dealer" time="0.003247" classname="test"/>
+		<testcase name="rejects empty carts" time="0.001684" classname="test"/>
 	</testsuite>
-	<testsuite name="searchController.globalSearch" time="0.007981" disabled="0" errors="0" tests="4" failures="0" skipped="0" hostname="Sriman3885">
-		<testcase name="returns 400 when the search query is missing" time="0.002869" classname="test"/>
-		<testcase name="returns cached results when Redis already has them" time="0.001475" classname="test"/>
-		<testcase name="formats MongoDB results and escapes special characters in the search term" time="0.002176" classname="test"/>
-		<testcase name="returns 500 when the search operation throws" time="0.001214" classname="test"/>
+	<testsuite name="searchController.globalSearch" time="0.006117" disabled="0" errors="0" tests="4" failures="0" skipped="0" hostname="Sriman3885">
+		<testcase name="returns 400 when the search query is missing" time="0.001617" classname="test"/>
+		<testcase name="returns cached results when Redis already has them" time="0.001672" classname="test"/>
+		<testcase name="formats MongoDB results and escapes special characters in the search term" time="0.001740" classname="test"/>
+		<testcase name="returns 500 when the search operation throws" time="0.000868" classname="test"/>
 	</testsuite>
-	<testsuite name="authMiddleware.protect" time="0.011918" disabled="0" errors="0" tests="4" failures="0" skipped="0" hostname="Sriman3885">
-		<testcase name="rejects requests without an authorization header" time="0.001589" classname="test"/>
-		<testcase name="rejects malformed bearer headers" time="0.000815" classname="test"/>
-		<testcase name="attaches the decoded user for valid bearer tokens" time="0.005777" classname="test"/>
-		<testcase name="rejects expired tokens with a clear error" time="0.003072" classname="test"/>
+	<testsuite name="authMiddleware.protect" time="0.010734" disabled="0" errors="0" tests="4" failures="0" skipped="0" hostname="Sriman3885">
+		<testcase name="rejects requests without an authorization header" time="0.000615" classname="test"/>
+		<testcase name="rejects malformed bearer headers" time="0.000456" classname="test"/>
+		<testcase name="attaches the decoded user for valid bearer tokens" time="0.004267" classname="test"/>
+		<testcase name="rejects expired tokens with a clear error" time="0.002651" classname="test"/>
 	</testsuite>
-	<testsuite name="roleMiddleware.authorize" time="0.004669" disabled="0" errors="0" tests="3" failures="0" skipped="0" hostname="Sriman3885">
-		<testcase name="rejects requests when no user is attached" time="0.003553" classname="test"/>
-		<testcase name="rejects users whose role is not allowed" time="0.000529" classname="test"/>
-		<testcase name="allows users with an approved role" time="0.000390" classname="test"/>
+	<testsuite name="roleMiddleware.authorize" time="0.001305" disabled="0" errors="0" tests="3" failures="0" skipped="0" hostname="Sriman3885">
+		<testcase name="rejects requests when no user is attached" time="0.000470" classname="test"/>
+		<testcase name="rejects users whose role is not allowed" time="0.000400" classname="test"/>
+		<testcase name="allows users with an approved role" time="0.000302" classname="test"/>
 	</testsuite>
 	<!-- tests 27 -->
 	<!-- suites 12 -->
@@ -58,5 +58,5 @@
 	<!-- cancelled 0 -->
 	<!-- skipped 0 -->
 	<!-- todo 0 -->
-	<!-- duration_ms 839.9714 -->
+	<!-- duration_ms 636.5011 -->
 </testsuites>

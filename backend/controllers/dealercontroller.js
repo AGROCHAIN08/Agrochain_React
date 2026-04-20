@@ -176,21 +176,26 @@ exports.getAllProducts = async (req, res, next) => {
   try {
     const farmers = await User.find({ 
       role: "farmer", 
-      crops: { $exists: true, $not: { $size: 0 } }
+      "crops.verificationStatus": "approved"
     })
       .select("email firstName lastName mobile farmLocation crops")
       .lean();
 
     const allProducts = farmers.flatMap((farmer) =>
       Array.isArray(farmer.crops)
-        ? farmer.crops.map((crop) => ({
-            _id: crop._id,
-            ...crop,
-            farmerEmail: farmer.email,
-            farmerName: `${farmer.firstName} ${farmer.lastName || ''}`.trim(),
-            farmerMobile: farmer.mobile,
-            farmerLocation: farmer.farmLocation
-          }))
+        ? farmer.crops
+            .filter((crop) => {
+              const status = crop.verificationStatus || crop.approvalStatus || "pending";
+              return status === "approved";
+            })
+            .map((crop) => ({
+              _id: crop._id,
+              ...crop,
+              farmerEmail: farmer.email,
+              farmerName: `${farmer.firstName} ${farmer.lastName || ''}`.trim(),
+              farmerMobile: farmer.mobile,
+              farmerLocation: farmer.farmLocation
+            }))
         : []
     );
 

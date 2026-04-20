@@ -49,7 +49,7 @@ afterEach(() => {
 });
 
 describe("dealerController.getAllProducts", () => {
-  it("returns flattened crops from all farmers", async () => {
+  it("returns only approved crops from all farmers", async () => {
     const farmers = [
       {
         email: "farmer-1@example.com",
@@ -57,7 +57,10 @@ describe("dealerController.getAllProducts", () => {
         lastName: "Kumar",
         mobile: "9999999999",
         farmLocation: "Punjab",
-        crops: [{ _id: "c1", varietySpecies: "Rice", dateAdded: "2026-01-02T00:00:00.000Z" }],
+        crops: [
+          { _id: "c1", varietySpecies: "Rice", verificationStatus: "pending", dateAdded: "2026-01-02T00:00:00.000Z" },
+          { _id: "c2", varietySpecies: "Corn", verificationStatus: "approved", dateAdded: "2026-01-04T00:00:00.000Z" },
+        ],
       },
       {
         email: "farmer-2@example.com",
@@ -65,7 +68,10 @@ describe("dealerController.getAllProducts", () => {
         lastName: "",
         mobile: "8888888888",
         farmLocation: "Karnataka",
-        crops: [{ _id: "c2", varietySpecies: "Wheat", dateAdded: "2026-01-03T00:00:00.000Z" }],
+        crops: [
+          { _id: "c3", varietySpecies: "Wheat", verificationStatus: "approved", dateAdded: "2026-01-03T00:00:00.000Z" },
+          { _id: "c4", varietySpecies: "Millet", approvalStatus: "approved", dateAdded: "2026-01-01T00:00:00.000Z" },
+        ],
       },
     ];
     const chain = {
@@ -83,9 +89,13 @@ describe("dealerController.getAllProducts", () => {
 
     await controller.getAllProducts({}, res, () => {});
 
-    assert.equal(res.body.length, 2);
-    assert.equal(res.body[0].farmerEmail, "farmer-2@example.com");
-    assert.equal(res.body[1].farmerEmail, "farmer-1@example.com");
+    assert.equal(res.body.length, 3);
+    assert.deepEqual(
+      res.body.map((product) => product.varietySpecies),
+      ["Corn", "Wheat", "Millet"]
+    );
+    assert.equal(res.body[0].farmerEmail, "farmer-1@example.com");
+    assert.equal(res.body[1].farmerEmail, "farmer-2@example.com");
   });
 });
 
