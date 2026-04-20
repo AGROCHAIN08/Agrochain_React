@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const apiBaseUrl = process.env.REACT_APP_API_URL || 'http://localhost:3000/api';
+const apiBaseUrl = process.env.REACT_APP_API_URL || 'https://agrochain-backend-4fbo.onrender.com/api';
 
 const api = axios.create({
   baseURL: apiBaseUrl,
