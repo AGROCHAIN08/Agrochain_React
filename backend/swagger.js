@@ -1,5 +1,7 @@
 const swaggerJsdoc = require("swagger-jsdoc");
 
+const publicApiUrl = (process.env.PUBLIC_API_URL || process.env.RENDER_EXTERNAL_URL || "").replace(/\/$/, "");
+
 const options = {
   definition: {
     openapi: "3.0.0",
@@ -7,7 +9,7 @@ const options = {
       title: "AgroChain API",
       version: "1.0.0",
       description:
-        "AgroChain — a farm-to-fork supply chain platform connecting Farmers, Dealers, Retailers, Representatives, and Admins.",
+        "AgroChain - a farm-to-fork supply chain platform connecting Farmers, Dealers, Retailers, Representatives, and Admins.",
       contact: {
         name: "AgroChain Team",
       },
@@ -17,10 +19,14 @@ const options = {
         url: "http://localhost:3000",
         description: "Local development server",
       },
-      {
-        url: "https://agrochain-i1h0.onrender.com",
-        description: "Production server",
-      },
+      ...(publicApiUrl
+        ? [
+            {
+              url: publicApiUrl,
+              description: "Deployed server",
+            },
+          ]
+        : []),
     ],
     components: {
       securitySchemes: {
@@ -33,12 +39,12 @@ const options = {
       },
     },
     tags: [
-      { name: "Auth", description: "Authentication & user profile endpoints" },
-      { name: "Farmer", description: "Farmer profile, crop, order & notification management" },
-      { name: "Dealer", description: "Dealer profile, vehicle, inventory, bidding & order management" },
-      { name: "Retailer", description: "Retailer inventory browsing, ordering & payments" },
-      { name: "Admin", description: "Admin dashboard, user management & representative CRUD" },
-      { name: "Representative", description: "Crop verification, claiming & approval workflows" },
+      { name: "Auth", description: "Authentication and user profile endpoints" },
+      { name: "Farmer", description: "Farmer profile, crop, order, and notification management" },
+      { name: "Dealer", description: "Dealer profile, vehicle, inventory, bidding, and order management" },
+      { name: "Retailer", description: "Retailer inventory browsing, ordering, and payments" },
+      { name: "Admin", description: "Admin dashboard, user management, and representative CRUD" },
+      { name: "Representative", description: "Crop verification, claiming, and approval workflows" },
     ],
   },
   apis: ["./routes/*.js"],

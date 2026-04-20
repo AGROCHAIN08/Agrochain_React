@@ -87,6 +87,8 @@ function requestApp(app, { method = "GET", urlPath = "/", headers = {} } = {}) {
 
 afterEach(() => {
   delete require.cache[appPath];
+  delete process.env.ALLOWED_ORIGINS;
+  delete process.env.FRONTEND_URL;
 
   for (const routePath of mockedRoutePaths) {
     const original = originalModules.get(routePath);
@@ -125,6 +127,21 @@ describe("backend app", () => {
 
     assert.equal(response.statusCode, 200);
     assert.equal(response.headers["access-control-allow-origin"], "http://localhost:3000");
+  });
+
+  it("allows origins provided through deployment environment variables", async () => {
+    process.env.ALLOWED_ORIGINS = "https://agrochain-frontend.vercel.app";
+    const app = loadApp();
+
+    const response = await requestApp(app, {
+      headers: { Origin: "https://agrochain-frontend.vercel.app" },
+    });
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(
+      response.headers["access-control-allow-origin"],
+      "https://agrochain-frontend.vercel.app"
+    );
   });
 
   it("rejects blocked origins through the central error handler", async () => {

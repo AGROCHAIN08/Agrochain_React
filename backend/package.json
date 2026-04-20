@@ -22,6 +22,8 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
     "test": "node --experimental-test-isolation=none --test",
     "test:report": "node ../scripts/run-backend-tests.mjs",
     "performance:report": "node scripts/generate-optimization-report.js"

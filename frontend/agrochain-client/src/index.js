@@ -6,7 +6,9 @@ import { Provider } from 'react-redux'; // 👈 ADD THIS
 import store from './redux/store'; // 👈 ADD THIS
 import './index.css';
 
-const GOOGLE_CLIENT_ID = "262898642473-niisbi298nfo33a175rju6acmpkatrs4.apps.googleusercontent.com";
+const GOOGLE_CLIENT_ID =
+  process.env.REACT_APP_GOOGLE_CLIENT_ID ||
+  "262898642473-niisbi298nfo33a175rju6acmpkatrs4.apps.googleusercontent.com";
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(

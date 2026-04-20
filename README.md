@@ -227,6 +227,64 @@ docker compose down
 
 ---
 
+## Deployment
+
+### Frontend on Vercel
+
+The frontend is ready for Vercel from `frontend/agrochain-client`.
+
+Files added for deployment:
+
+- `frontend/agrochain-client/vercel.json`
+- `frontend/agrochain-client/.env.example`
+
+Use these Vercel settings:
+
+- Framework preset: `Create React App`
+- Root directory: `frontend/agrochain-client`
+- Build command: `npm run build`
+- Output directory: `build`
+
+Add these environment variables in Vercel:
+
+- `REACT_APP_API_URL=https://your-backend.onrender.com/api`
+- `REACT_APP_GOOGLE_CLIENT_ID=your_google_client_id`
+
+### Backend on Render
+
+The backend is ready for Render from `backend`.
+
+Files added for deployment:
+
+- `render.yaml`
+- `backend/.env.example`
+
+Use these Render settings if you create the service manually:
+
+- Runtime: `Node`
+- Root directory: `backend`
+- Build command: `npm install`
+- Start command: `npm run start`
+
+Important Render environment variables:
+
+- `MONGO_URI`
+- `JWT_SECRET`
+- `EMAIL_USER`
+- `EMAIL_PASS`
+- `GOOGLE_CLIENT_ID`
+- `FRONTEND_URL=https://your-frontend.vercel.app`
+- `ALLOWED_ORIGINS=https://your-frontend.vercel.app`
+- `REDIS_URL` if you connect Render Redis
+
+Notes:
+
+- Backend CORS now reads `ALLOWED_ORIGINS` and `FRONTEND_URL` instead of relying only on hardcoded URLs.
+- Swagger now uses `PUBLIC_API_URL` or Render's public URL automatically when available.
+- The frontend Google OAuth client id can now be supplied through `REACT_APP_GOOGLE_CLIENT_ID`.
+
+---
+
 ## Performance Report
 
 To generate the optimization report for database indexing, query planning, and Redis cache speedup:
@@ -247,8 +305,9 @@ This report uses the current MongoDB data and a running Redis instance to show:
 - how many documents/keys were examined
 - average uncached MongoDB time vs cached Redis time
 
-You can open the combined dashboard here:
+Open the reports here:
 
+- `reports/performance/optimization-report.html`
 - `reports/index.html`
 
 ---

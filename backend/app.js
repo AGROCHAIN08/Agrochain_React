@@ -14,17 +14,45 @@ dotenv.config();
 
 const app = express();
 
+const parseOrigins = (value) =>
+  (value || "")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
 const allowedOrigins = [
+  ...new Set([
+    ...parseOrigins(process.env.ALLOWED_ORIGINS),
+    ...parseOrigins(process.env.FRONTEND_URL),
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:5000",
+    "http://127.0.0.1:5000",
+    "http://localhost:5500",
+    "http://127.0.0.1:5500",
+    "http://localhost:3001",
+    "http://127.0.0.1:3001",
+  ]),
+];
+
+const isAllowedOrigin = (origin) => {
+  if (!origin) {
+    return true;
+  }
+
+  return allowedOrigins.includes(origin);
+};
+
+const defaultAllowedOrigins = [
   "https://agrochain-teal.vercel.app",
   "https://agrochain-i1h0.onrender.com",
-  "http://localhost:3000",
-  "http://127.0.0.1:3000",
-  "http://localhost:5000",
-  "http://127.0.0.1:5000",
-  "http://localhost:5500",
-  "http://127.0.0.1:5500",
-  "http://localhost:3001"
 ];
+
+for (const origin of defaultAllowedOrigins) {
+  if (!allowedOrigins.includes(origin)) {
+    allowedOrigins.push(origin);
+  }
+}
 
 // Ensure logs directory exists
 const logsDir = path.join(__dirname, "logs");
@@ -44,8 +72,7 @@ app.use("/api/search", searchRoutes);
 app.use(cors({
   origin: function (origin, callback) {
     // Allow requests with no origin (like Postman or curl)
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) {
+    if (isAllowedOrigin(origin)) {
       return callback(null, true);
     }
     console.log(`❌ Blocked by CORS: ${origin}`);
